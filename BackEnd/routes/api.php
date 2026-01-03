@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportController;
 
 // API Routes
 
@@ -76,15 +77,10 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
 
 // Reports Routes - Only Admin can access
 Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
-    Route::get('/reports/sales', function () {
-        return response()->json(['success' => true, 'data' => [], 'message' => 'Sales reports endpoint']);
-    });
-    Route::get('/reports/revenue', function () {
-        return response()->json(['success' => true, 'data' => [], 'message' => 'Revenue reports endpoint']);
-    });
-    Route::get('/reports/inventory', function () {
-        return response()->json(['success' => true, 'data' => [], 'message' => 'Inventory reports endpoint']);
-    });
+    Route::get('/reports/sales', [ReportController::class, 'getSalesReport']);
+    Route::get('/reports/inventory', [ReportController::class, 'getInventoryReport']);
+    Route::get('/reports/financial', [ReportController::class, 'getFinancialReport']);
+    Route::get('/reports/stats', [ReportController::class, 'getReportStats']);
 });
 
 // Settings Routes - Only Admin can access
