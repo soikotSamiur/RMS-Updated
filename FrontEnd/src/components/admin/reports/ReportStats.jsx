@@ -14,10 +14,10 @@ const ReportStats = ({ reportType, data }) => {
   const getInventoryStats = () => {
     if (!data || data.length === 0) return { totalItems: 0, lowStock: 0, outOfStock: 0, totalValue: 0 };
     
-    const totalItems = data.reduce((sum, cat) => sum + cat.totalItems, 0);
-    const lowStock = data.reduce((sum, cat) => sum + cat.lowStock, 0);
-    const outOfStock = data.reduce((sum, cat) => sum + cat.outOfStock, 0);
-    const totalValue = data.reduce((sum, cat) => sum + cat.value, 0);
+    const totalItems = data.reduce((sum, cat) => sum + Number(cat.totalItems || 0), 0);
+    const lowStock = data.reduce((sum, cat) => sum + Number(cat.lowStock || 0), 0);
+    const outOfStock = data.reduce((sum, cat) => sum + Number(cat.outOfStock || 0), 0);
+    const totalValue = data.reduce((sum, cat) => sum + Number(cat.value || 0), 0);
     
     return { totalItems, lowStock, outOfStock, totalValue };
   };
@@ -39,7 +39,7 @@ const ReportStats = ({ reportType, data }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow">
           <div className="text-sm text-blue-600 font-medium">Total Revenue</div>
-          <div className="text-2xl font-bold text-blue-700">${stats.totalRevenue.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-blue-700">৳{stats.totalRevenue.toLocaleString()}</div>
         </div>
         <div className="bg-white p-4 rounded-lg border-l-4 border-green-500 shadow">
           <div className="text-sm text-green-600 font-medium">Total Orders</div>
@@ -47,7 +47,7 @@ const ReportStats = ({ reportType, data }) => {
         </div>
         <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500 shadow">
           <div className="text-sm text-purple-600 font-medium">Avg Order Value</div>
-          <div className="text-2xl font-bold text-purple-700">${stats.averageOrder.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-purple-700">৳{stats.averageOrder.toFixed(2)}</div>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ const ReportStats = ({ reportType, data }) => {
         </div>
         <div className="bg-white shadow p-4 rounded-lg border-l-4 border-green-500">
           <div className="text-sm text-green-600 font-medium">Total Value</div>
-          <div className="text-2xl font-bold text-green-700">${stats.totalValue.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-green-700">৳{stats.totalValue.toLocaleString()}</div>
         </div>
       </div>
     );
@@ -83,19 +83,19 @@ const ReportStats = ({ reportType, data }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white shadow p-4 rounded-lg border-l-4 border-green-500">
           <div className="text-sm text-green-600 font-medium">Total Revenue</div>
-          <div className="text-2xl font-bold text-green-700">${stats.revenue.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-green-700">৳{stats.revenue.toLocaleString()}</div>
         </div>
         <div className="bg-white shadow p-4 rounded-lg border-l-4 border-red-500">
           <div className="text-sm text-red-600 font-medium">Total Expenses</div>
-          <div className="text-2xl font-bold text-red-700">${stats.expenses.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-red-700">৳{stats.expenses.toLocaleString()}</div>
         </div>
         <div className="bg-shadow shadow p-4 rounded-lg border-l-4 border-blue-500">
           <div className="text-sm text-blue-600 font-medium">Gross Profit</div>
-          <div className="text-2xl font-bold text-blue-700">${stats.profit.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-blue-700">৳{stats.profit.toLocaleString()}</div>
         </div>
         <div className="bg-white shadow p-4 rounded-lg border-l-4 border-purple-500">
           <div className="text-sm text-purple-600 font-medium">Net Profit</div>
-          <div className="text-2xl font-bold text-purple-700">${stats.netProfit.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-purple-700">৳{stats.netProfit.toLocaleString()}</div>
         </div>
       </div>
     );

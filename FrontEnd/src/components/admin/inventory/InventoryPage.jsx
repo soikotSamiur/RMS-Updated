@@ -8,8 +8,10 @@ import LowStocksAlerts from './LowStocksAlerts';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
 import Notification from './Notification';
+import Pagination from '../../common/Pagination';
 
 const InventoryPage = () => {
+  const { user } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -17,6 +19,8 @@ const InventoryPage = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchInventory = async (filters = {}) => {
     try {
@@ -39,6 +43,18 @@ const InventoryPage = () => {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredItems]);
 
   const showNotification = (message, type = 'info') => {
     setNotification({ show: true, message, type });
@@ -161,8 +177,6 @@ const InventoryPage = () => {
     );
   }
 
-  const { user } = useAuth();
-
   return (
     <div className="page-content  md:p-2">
       {/* Header */}
@@ -213,10 +227,19 @@ const InventoryPage = () => {
       <SearchFilterBar onFilter={filterInventory} />
       
       <InventoryTable 
-        items={filteredItems}
+        items={paginatedItems}
         onEdit={openEditItemModal}
         onUpdateStock={updateStock}
         onDelete={deleteItem}
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredItems.length}
+        onItemsPerPageChange={setItemsPerPage}
       />
 
       <LowStocksAlerts 

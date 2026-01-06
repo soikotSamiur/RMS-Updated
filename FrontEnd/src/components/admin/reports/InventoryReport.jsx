@@ -9,37 +9,12 @@ const InventoryReport = ({ data, filters }) => {
     );
   }
 
-  const totalItems = data.reduce((sum, cat) => sum + cat.totalItems, 0);
-  const lowStockItems = data.reduce((sum, cat) => sum + cat.lowStock, 0);
-  const outOfStockItems = data.reduce((sum, cat) => sum + cat.outOfStock, 0);
-  const totalValue = data.reduce((sum, cat) => sum + cat.value, 0);
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Inventory Report</h2>
         <div className="text-sm text-gray-600">
           Current Stock Status
-        </div>
-      </div>
-
-      {/* Inventory Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
-          <div className="text-2xl font-bold text-blue-600">{totalItems}</div>
-          <div className="text-sm text-gray-600">Total Items</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
-          <div className="text-2xl font-bold text-yellow-600">{lowStockItems}</div>
-          <div className="text-sm text-gray-600">Low Stock</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
-          <div className="text-2xl font-bold text-red-600">{outOfStockItems}</div>
-          <div className="text-sm text-gray-600">Out of Stock</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
-          <div className="text-2xl font-bold text-green-600">${totalValue.toLocaleString()}</div>
-          <div className="text-sm text-gray-600">Total Value</div>
         </div>
       </div>
 
@@ -58,7 +33,12 @@ const InventoryReport = ({ data, filters }) => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {data.map((category) => {
-              const stockPercentage = ((category.totalItems - category.outOfStock) / category.totalItems) * 100;
+              // Calculate stock percentage: only fully in-stock items count
+              // Low-stock and out-of-stock items are subtracted from total
+              const inStockCount = category.inStock || 0;
+              const stockPercentage = (inStockCount / category.totalItems) * 100;
+              
+              // Color coding based on percentage
               let statusColor = 'bg-green-100 text-green-800';
               if (stockPercentage < 50) statusColor = 'bg-red-100 text-red-800';
               else if (stockPercentage < 80) statusColor = 'bg-yellow-100 text-yellow-800';
@@ -81,7 +61,7 @@ const InventoryReport = ({ data, filters }) => {
                       {category.outOfStock}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-green-600">${category.value.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-semibold text-green-600">৳{category.value.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}>
                       {stockPercentage.toFixed(0)}% Stocked

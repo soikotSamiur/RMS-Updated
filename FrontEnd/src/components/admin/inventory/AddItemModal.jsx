@@ -7,7 +7,8 @@ const AddItemModal = ({ onClose, onSave }) => {
     currentStock: '',
     unit: '',
     reorderLevel: '',
-    supplier: ''
+    supplier: '',
+    costPerUnit: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -76,6 +77,11 @@ const AddItemModal = ({ onClose, onSave }) => {
                 <option value="dairy">Dairy</option>
                 <option value="beverages">Beverages</option>
                 <option value="spices">Spices</option>
+                <option value="bakery">Bakery</option>
+                <option value="oil">Oil</option>
+                <option value="sauces">Sauces</option>
+                <option value="dessert">Dessert</option>
+                <option value="fruits">Fruits</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -123,6 +129,19 @@ const AddItemModal = ({ onClose, onSave }) => {
                 value={formData.reorderLevel}
                 onChange={handleChange}
                 required 
+                min="0" 
+                step="0.01"
+                className="w-full px-3 bg-white text-black py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price Per Unit (৳)</label>
+              <input 
+                type="number" 
+                name="costPerUnit"
+                placeholder='Enter price per unit...'
+                value={formData.costPerUnit}
+                onChange={handleChange}
                 min="0" 
                 step="0.01"
                 className="w-full px-3 bg-white text-black py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"

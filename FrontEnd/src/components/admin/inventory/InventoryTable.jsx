@@ -38,6 +38,7 @@ const InventoryTable = ({ items, onEdit, onDelete }) => {
               <th className="px-6 py-3 font-semibold text-gray-700">Category</th>
               <th className="px-6 py-3 font-semibold text-gray-700">Current Stock</th>
               <th className="px-6 py-3 font-semibold text-gray-700">Unit</th>
+              <th className="px-6 py-3 font-semibold text-gray-700">Price/Unit</th>
               <th className="px-6 py-3 font-semibold text-gray-700">Reorder Level</th>
               <th className="px-6 py-3 font-semibold text-gray-700">Supplier</th>
               <th className="px-6 py-3 font-semibold text-gray-700">Status</th>
@@ -54,6 +55,9 @@ const InventoryTable = ({ items, onEdit, onDelete }) => {
                   <td className="px-6 py-4 capitalize text-gray-500">{item.category.replace('_', ' ')}</td>
                   <td className={`px-6 py-4 font-semibold ${stockLevelClass}`}>{item.currentStock}</td>
                   <td className="px-6 py-4 text-gray-500">{item.unit}</td>
+                  <td className="px-6 py-4 text-gray-500">
+                    {item.costPerUnit ? `৳${Number(item.costPerUnit).toFixed(2)}` : '-'}
+                  </td>
                   <td className="px-6 py-4 text-gray-500">{item.reorderLevel}</td>
                   <td className="px-6 py-4 text-gray-500">{item.supplier}</td>
                   <td className="px-6 py-4">{getStatusBadge(item.status)}</td>

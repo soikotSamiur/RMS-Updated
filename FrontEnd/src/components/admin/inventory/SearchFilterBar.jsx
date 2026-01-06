@@ -47,6 +47,11 @@ const SearchFilterBar = ({ onFilter }) => {
             <option value="dairy">Dairy</option>
             <option value="beverages">Beverages</option>
             <option value="spices">Spices</option>
+            <option value="bakery">Bakery</option>
+            <option value="oil">Oil</option>
+            <option value="sauces">Sauces</option>
+            <option value="dessert">Dessert</option>
+            <option value="fruits">Fruits</option>
             <option value="other">Other</option>
           </select>
           <select 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import SalesReport from './SalesReport';
 import InventoryReport from './InventoryReport';
-import FinancialReport from './FinancialReport';
 import ReportFilters from './ReportFilters';
 import ReportStats from './ReportStats';
+import apiService from '../../../services/apiService';
 
 const ReportsPage = () => {
   const [activeReport, setActiveReport] = useState('sales');
@@ -15,81 +15,26 @@ const ReportsPage = () => {
   });
   const [reportData, setReportData] = useState({
     sales: [],
-    inventory: [],
-    financial: {}
+    inventory: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // MOCK DATA (REMOVE WHEN BACKEND IS AVAILABLE):
-  // - These generators create placeholder report data for UI previews.
-  // - Replace with `apiService.reports.getReport(activeReport, filters)` responses
-  //   and remove the generator functions.
-  const generateSalesData = () => {
-    const days = [];
-    const start = new Date(filters.startDate);
-    const end = new Date(filters.endDate);
-    
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-      days.push({
-        date: date.toISOString().split('T')[0],
-        revenue: Math.floor(Math.random() * 5000) + 1000,
-        orders: Math.floor(Math.random() * 50) + 20,
-        averageOrder: Math.floor(Math.random() * 50) + 25
-      });
-    }
-    
-    return days;
-  };
-
-  const generateInventoryData = () => {
-    return [
-      { category: 'Vegetables', totalItems: 15, lowStock: 3, outOfStock: 1, value: 450 },
-      { category: 'Meat & Poultry', totalItems: 8, lowStock: 2, outOfStock: 0, value: 1200 },
-      { category: 'Dairy', totalItems: 12, lowStock: 1, outOfStock: 1, value: 300 },
-      { category: 'Beverages', totalItems: 20, lowStock: 0, outOfStock: 0, value: 600 },
-      { category: 'Spices', totalItems: 25, lowStock: 2, outOfStock: 0, value: 150 },
-      { category: 'Other', totalItems: 10, lowStock: 1, outOfStock: 0, value: 200 }
-    ];
-  };
-
-  const generateFinancialData = () => {
-    return {
-      revenue: 125000,
-      expenses: 85000,
-      profit: 40000,
-      tax: 10000,
-      netProfit: 30000,
-      breakdown: [
-        { category: 'Food Sales', amount: 100000, percentage: 80 },
-        { category: 'Beverage Sales', amount: 25000, percentage: 20 },
-        { category: 'Ingredient Costs', amount: 45000, percentage: 36 },
-        { category: 'Labor Costs', amount: 25000, percentage: 20 },
-        { category: 'Rent & Utilities', amount: 15000, percentage: 12 }
-      ]
-    };
-  };
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchReports = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // TODO: API CALL - Get report data based on active report and filters
-      // TODO: import apiService from '../../../services/apiService';
-      // TODO: const response = await apiService.reports.getReport(activeReport, filters);
-      // TODO: setReportData(prev => ({ ...prev, [activeReport]: response.data }));
-      
-      // CURRENT: Mock data - remove when API is ready
+      // Fetch real data from backend API
       if (activeReport === 'sales') {
-        setReportData(prev => ({ ...prev, sales: generateSalesData() }));
+        const response = await apiService.reports.getSalesReport(filters.startDate, filters.endDate);
+        setReportData(prev => ({ ...prev, sales: response.data }));
       } else if (activeReport === 'inventory') {
-        setReportData(prev => ({ ...prev, inventory: generateInventoryData() }));
-      } else if (activeReport === 'financial') {
-        setReportData(prev => ({ ...prev, financial: generateFinancialData() }));
+        const response = await apiService.reports.getInventoryReport();
+        setReportData(prev => ({ ...prev, inventory: response.data }));
       }
     } catch (err) {
-      // TODO: Handle API errors
       setError(err.message || 'Failed to fetch reports');
       console.error('Failed to fetch reports:', err);
     } finally {
@@ -100,11 +45,15 @@ const ReportsPage = () => {
   // Now useEffect can safely use the function
   useEffect(() => {
     fetchReports();
-  }, [activeReport, filters]);
+  }, [activeReport, filters, refreshKey]);
  
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const exportReport = () => {
@@ -130,8 +79,7 @@ const ReportsPage = () => {
 
   const reports = [
     { id: 'sales', name: 'Sales Report', icon: 'fas fa-chart-line' },
-    { id: 'inventory', name: 'Inventory Report', icon: 'fas fa-boxes' },
-    { id: 'financial', name: 'Financial Report', icon: 'fas fa-money-bill-wave' }
+    { id: 'inventory', name: 'Inventory Report', icon: 'fas fa-boxes' }
   ];
 
   const renderActiveReport = () => {
@@ -151,8 +99,6 @@ const ReportsPage = () => {
         return <SalesReport data={reportData.sales} filters={filters} />;
       case 'inventory':
         return <InventoryReport data={reportData.inventory} filters={filters} />;
-      case 'financial':
-        return <FinancialReport data={reportData.financial} filters={filters} />;
       default:
         return <SalesReport data={reportData.sales} filters={filters} />;
     }
@@ -168,6 +114,13 @@ const ReportsPage = () => {
             <p className="text-gray-600">Comprehensive insights into your restaurant performance</p>
           </div>
           <div className="flex space-x-3 mt-4 md:mt-0">
+            <button 
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <i className={`fas fa-sync ${isLoading ? 'animate-spin' : ''}`}></i> Refresh
+            </button>
             <button 
               onClick={exportReport}
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"

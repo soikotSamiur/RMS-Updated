@@ -10,7 +10,8 @@ const EditItemModal = ({ item, onClose, onSave }) => {
         currentStock: item.currentStock || '',
         unit: item.unit || '',
         reorderLevel: item.reorderLevel || '',
-        supplier: item.supplier || ''
+        supplier: item.supplier || '',
+        costPerUnit: item.costPerUnit || ''
       };
     }
     return {
@@ -19,7 +20,8 @@ const EditItemModal = ({ item, onClose, onSave }) => {
       currentStock: '',
       unit: '',
       reorderLevel: '',
-      supplier: ''
+      supplier: '',
+      costPerUnit: ''
     };
   });
 
@@ -99,6 +101,11 @@ const EditItemModal = ({ item, onClose, onSave }) => {
                 <option value="dairy">Dairy</option>
                 <option value="beverages">Beverages</option>
                 <option value="spices">Spices</option>
+                <option value="bakery">Bakery</option>
+                <option value="oil">Oil</option>
+                <option value="sauces">Sauces</option>
+                <option value="dessert">Dessert</option>
+                <option value="fruits">Fruits</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -151,6 +158,21 @@ const EditItemModal = ({ item, onClose, onSave }) => {
                 value={formData.reorderLevel}
                 onChange={handleChange}
                 required 
+                min="0" 
+                step="0.01"
+                className="w-full px-3 py-2 bg-white text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price Per Unit (৳)
+              </label>
+              <input 
+                type="number" 
+                name="costPerUnit"
+                value={formData.costPerUnit}
+                onChange={handleChange}
                 min="0" 
                 step="0.01"
                 className="w-full px-3 py-2 bg-white text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"

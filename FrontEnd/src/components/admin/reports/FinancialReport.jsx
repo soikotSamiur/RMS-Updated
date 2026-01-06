@@ -24,19 +24,19 @@ const FinancialReport = ({ data, filters }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="text-sm text-green-600 font-medium">Total Revenue</div>
-          <div className="text-2xl font-bold text-green-700">${revenue.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-green-700">৳{revenue.toLocaleString()}</div>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="text-sm text-red-600 font-medium">Total Expenses</div>
-          <div className="text-2xl font-bold text-red-700">${expenses.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-red-700">৳{expenses.toLocaleString()}</div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="text-sm text-blue-600 font-medium">Gross Profit</div>
-          <div className="text-2xl font-bold text-blue-700">${profit.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-blue-700">৳{profit.toLocaleString()}</div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="text-sm text-purple-600 font-medium">Net Profit</div>
-          <div className="text-2xl font-bold text-purple-700">${netProfit.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-purple-700">৳{netProfit.toLocaleString()}</div>
         </div>
       </div>
 
@@ -47,53 +47,53 @@ const FinancialReport = ({ data, filters }) => {
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-700">Total Revenue</span>
-              <span className="font-semibold text-green-600">${revenue.toLocaleString()}</span>
+              <span className="font-semibold text-green-600">৳{revenue.toLocaleString()}</span>
             </div>
             
             <div className="pl-4 space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Food Sales</span>
-                <span className="font-medium text-black">${(revenue * 0.8).toLocaleString()}</span>
+                <span className="font-medium text-black">৳{(revenue * 0.8).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Beverage Sales</span>
-                <span className="font-medium text-black">${(revenue * 0.2).toLocaleString()}</span>
+                <span className="font-medium text-black">৳{(revenue * 0.2).toLocaleString()}</span>
               </div>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-700">Total Expenses</span>
-              <span className="font-semibold text-red-600">${expenses.toLocaleString()}</span>
+              <span className="font-semibold text-red-600">৳{expenses.toLocaleString()}</span>
             </div>
             
             <div className="pl-4 space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Ingredient Costs</span>
-                <span className="font-medium text-black">${(expenses * 0.53).toLocaleString()}</span>
+                <span className="font-medium text-black">৳{(expenses * 0.53).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Labor Costs</span>
-                <span className="font-medium text-black">${(expenses * 0.29).toLocaleString()}</span>
+                <span className="font-medium text-black">৳{(expenses * 0.29).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Rent & Utilities</span>
-                <span className="font-medium text-black">${(expenses * 0.18).toLocaleString()}</span>
+                <span className="font-medium text-black">৳{(expenses * 0.18).toLocaleString()}</span>
               </div>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-700">Gross Profit</span>
-              <span className="font-semibold text-blue-600">${profit.toLocaleString()}</span>
+              <span className="font-semibold text-blue-600">৳{profit.toLocaleString()}</span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-700">Tax</span>
-              <span className="font-semibold text-orange-600">${tax.toLocaleString()}</span>
+              <span className="font-semibold text-orange-600">৳{tax.toLocaleString()}</span>
             </div>
 
             <div className="flex justify-between items-center py-2 font-bold text-lg">
               <span className="text-gray-800">Net Profit</span>
-              <span className="text-purple-600 ">${netProfit.toLocaleString()}</span>
+              <span className="text-purple-600 ">৳{netProfit.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ const FinancialReport = ({ data, filters }) => {
               <div key={item.category} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700">{item.category}</span>
-                  <span className="text-sm font-semibold text-black">${item.amount.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-black">৳{item.amount.toLocaleString()}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
@@ -121,7 +121,7 @@ const FinancialReport = ({ data, filters }) => {
                 </div>
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>{item.percentage}% of revenue</span>
-                  <span>${item.amount.toLocaleString()}</span>
+                  <span>৳{item.amount.toLocaleString()}</span>
                 </div>
               </div>
             ))}

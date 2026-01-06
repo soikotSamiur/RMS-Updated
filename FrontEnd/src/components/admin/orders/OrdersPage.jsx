@@ -5,6 +5,7 @@ import OrderCardsGrid from './OrderCardsGrid';
 import OrderTable from './OrderTable';
 import OrderActions from './OrderActions';
 import NewOrderModal from './NewOrderModal';
+import Pagination from '../../common/Pagination';
 import apiService from '../../../services/apiService';
 
 // // MOCK DATA (REMOVE WHEN BACKEND IS AVAILABLE):
@@ -106,6 +107,8 @@ const OrdersPage = () => {
   const [error, setError] = useState(null);
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     fetchOrders();
@@ -131,6 +134,17 @@ const OrdersPage = () => {
   const filteredOrders = selectedStatus === 'all' 
     ? orders 
     : orders.filter(order => order.status === selectedStatus);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Reset to page 1 when status filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus]);
 
   // Calculate order statistics
   const orderStats = {
@@ -260,19 +274,33 @@ const OrdersPage = () => {
 
       {/* Orders Display */}
       {!loading && !error && orders.length > 0 && (
-        viewMode === 'grid' ? (
-          <OrderCardsGrid 
-            orders={filteredOrders}
-            onStatusUpdate={updateOrderStatus}
-            onEditOrder={handleEditOrder}
-          />
-        ) : (
-          <OrderTable 
-            orders={filteredOrders}
-            onStatusUpdate={updateOrderStatus}
-            onEditOrder={handleEditOrder}
-          />
-        )
+        <>
+          {viewMode === 'grid' ? (
+            <OrderCardsGrid 
+              orders={paginatedOrders}
+              onStatusUpdate={updateOrderStatus}
+              onEditOrder={handleEditOrder}
+            />
+          ) : (
+            <OrderTable 
+              orders={paginatedOrders}
+              onStatusUpdate={updateOrderStatus}
+              onEditOrder={handleEditOrder}
+            />
+          )}
+
+          {/* Pagination */}
+          {filteredOrders.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredOrders.length}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+        </>
       )}
 
       {/* New Order Modal */}

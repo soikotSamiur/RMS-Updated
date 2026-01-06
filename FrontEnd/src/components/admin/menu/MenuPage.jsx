@@ -6,6 +6,7 @@ import CartSection from './CartSection';
 import QuickActions from './QuickActions';
 import AddMenuItemModal from './AddMenuItemModal';
 import BillReceipt from './BillReceipt';
+import Pagination from '../../common/Pagination';
 import apiService from '../../../services/apiService';
 
 const MenuPage = () => {
@@ -23,6 +24,8 @@ const MenuPage = () => {
     const [currentOrder, setCurrentOrder] 
     = useState(null);
     const [tableNumber, setTableNumber] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
 
     useEffect(() => {
         fetchMenuData();
@@ -62,6 +65,17 @@ const MenuPage = () => {
             item.description.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, searchQuery]);
 
     // Add item to cart
     const addToCart = (item) => {
@@ -366,12 +380,24 @@ const MenuPage = () => {
 
                     {/* Menu Grid */}
                     <MenuGrid
-                        items={filteredItems}
+                        items={paginatedItems}
                         onAddToCart={addToCart}
                         onEditItem={openEditModal}
                         onDeleteItem={handleDeleteItem}
                         onToggleAvailability={handleToggleAvailability}
                     />
+
+                    {/* Pagination */}
+                    {filteredItems.length > 0 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={filteredItems.length}
+                            onItemsPerPageChange={setItemsPerPage}
+                        />
+                    )}
 
                     {/* Empty State */}
                     {filteredItems.length === 0 && !loading && (
