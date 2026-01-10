@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const auth = useAuth();
 
@@ -61,7 +63,7 @@ const LoginPage = () => {
                   <li><Link to="/register" className="text-gray-700 font-semibold">Register</Link></li>
                 </ul>
               </div>
-              <Link to="/" className="text-2xl text-orange-500 font-bold">DineSmart</Link>
+              <Link to="/" className="text-2xl text-orange-500 font-bold">{settings.restaurant_name || 'DineSmart'}</Link>
             </div>
             <div className="navbar-end hidden lg:flex">
               <ul className="menu menu-horizontal px-1 flex items-center">

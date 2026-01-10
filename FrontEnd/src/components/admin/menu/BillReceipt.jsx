@@ -1,20 +1,12 @@
 import { useRef } from 'react';
+import { useSettings } from '../../../context/SettingsContext';
 
 const BillReceipt = ({ order, cart, onClose }) => {
   const receiptRef = useRef();
+  const { settings } = useSettings();
 
   const handlePrint = () => {
     window.print();
-  };
-
-  const handleDownload = () => {
-    const printContent = receiptRef.current.innerHTML;
-    const originalContent = document.body.innerHTML;
-    
-    document.body.innerHTML = printContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-    window.location.reload();
   };
 
   const currentDate = new Date().toLocaleString();
@@ -26,9 +18,9 @@ const BillReceipt = ({ order, cart, onClose }) => {
           {/* Receipt Content */}
           <div ref={receiptRef} className="p-8">
             <div className="text-center mb-6 border-b-2 border-dashed pb-4">
-              <h1 className="text-2xl font-bold text-gray-800">DineSmart</h1>
-              <p className="text-sm text-gray-600">Road 12, Sector 10, Uttara</p>
-              <p className="text-sm text-gray-600">Dhaka, Bangladesh</p>
+              <h1 className="text-2xl font-bold text-gray-800">{settings.restaurant_name || 'DineSmart'}</h1>
+              <p className="text-sm text-gray-600">{settings.address || 'Road 12, Sector 10, Uttara, Dhaka, Bangladesh'}</p>
+              <p className="text-sm text-gray-600">{settings.phone || '(555) 123-4567'}</p>
               <p className="text-sm text-gray-600 mt-2">{currentDate}</p>
             </div>
 

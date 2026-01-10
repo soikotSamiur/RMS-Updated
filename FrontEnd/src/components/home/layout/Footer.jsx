@@ -1,10 +1,14 @@
+import { useSettings } from '../../../context/SettingsContext';
+
 const Footer = () => {
+  const { settings } = useSettings();
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-6xl mx-auto py-10 px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
         <div>
           <div className="flex items-center mb-2">
-            <span className="font-bold text-orange-500 text-xl">DineSmart</span>
+            <span className="font-bold text-orange-500 text-xl">{settings.restaurant_name || 'DineSmart'}</span>
           </div>
           <p>Smart dining starts here with exceptional food and service.</p>
         </div>
@@ -19,18 +23,17 @@ const Footer = () => {
         </div>
         <div>
           <h4 className="font-semibold mb-2">Contact</h4>
-          <div>(555) 123-4567</div>
-          <div>info@dinesmart.com</div>
-          <div>Road 12, Sector 10<br />Uttara, Dhaka Bangladesh</div>
+          <div>{settings.phone || '(555) 123-4567'}</div>
+          <div>{settings.email || 'info@dinesmart.com'}</div>
+          <div>{settings.address || 'Road 12, Sector 10, Uttara, Dhaka Bangladesh'}</div>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Hours</h4>
-          <div>Monday - Friday<br />11:00 AM – 10:00 PM</div>
-          <div>Saturday - Sunday<br />10:00 AM – 11:00 PM</div>
+          <div>{settings.business_hours || 'Mon-Fri: 11AM - 10PM, Sat-Sun: 10AM - 11PM'}</div>
         </div>
       </div>
       <div className="text-center py-4 text-gray-400 text-xs">
-        © 2025 DineSmart. All rights reserved.
+        © 2025 {settings.restaurant_name || 'DineSmart'}. All rights reserved.
       </div>
     </footer>
   );

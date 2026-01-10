@@ -7,6 +7,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
 
 // API Routes
 
@@ -85,11 +86,7 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
 
 // Settings Routes - Only Admin can access
 Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
-    Route::get('/settings', function () {
-        return response()->json(['success' => true, 'data' => [], 'message' => 'Settings endpoint']);
-    });
-    Route::put('/settings', function () {
-        return response()->json(['success' => true, 'message' => 'Settings updated']);
-    });
+    Route::get('/settings', [SettingsController::class, 'index']);
+    Route::put('/settings', [SettingsController::class, 'update']);
 });
 

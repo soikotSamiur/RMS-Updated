@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../../../services/apiService';
+import { useSettings } from '../../../context/SettingsContext';
 
 const SettingsPage = () => {
+  const { refreshSettings } = useSettings();
   const [settings, setSettings] = useState({
-    restaurantName: 'My Restaurant',
+    restaurant_name: 'My Restaurant',
     email: 'contact@restaurant.com',
     phone: '+1234567890',
     address: '123 Main St, City, State',
-    timezone: 'UTC-5',
-    currency: 'USD',
+    timezone: 'UTC+6',
+    currency: 'BDT',
     theme: 'light',
+    business_hours: 'Mon-Fri: 11AM - 10PM, Sat-Sun: 10AM - 11PM',
   });
 
   const [activeTab, setActiveTab] = useState('general');
@@ -23,21 +27,15 @@ const SettingsPage = () => {
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      // TODO: API CALL - Get restaurant settings
-      // TODO: import apiService from '../../../services/apiService';
-      // TODO: const response = await apiService.settings.getSettings();
-      // TODO: setSettings(response.settings);
+      const response = await apiService.settings.getSettings();
       
-      // CURRENT: Mock data from localStorage - remove when API is ready
-      const savedSettings = localStorage.getItem('restaurantSettings');
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+      if (response.success) {
+        setSettings(response.data);
       }
       setError(null);
     } catch (err) {
-      // TODO: Handle API errors
       console.error('Failed to fetch settings:', err);
-      setError(err.message || 'Failed to load settings');
+      setError(err.response?.data?.message || 'Failed to load settings');
     } finally {
       setIsLoading(false);
     }
@@ -54,18 +52,16 @@ const SettingsPage = () => {
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      // TODO: API CALL - Update restaurant settings
-      // TODO: import apiService from '../../../services/apiService';
-      // TODO: await apiService.settings.updateSettings(settings);
+      const response = await apiService.settings.updateSettings(settings);
       
-      // CURRENT: Mock save to localStorage - remove when API is ready
-      localStorage.setItem('restaurantSettings', JSON.stringify(settings));
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
+      if (response.success) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
+        refreshSettings(); // Refresh global settings
+      }
       setError(null);
     } catch (err) {
-      // TODO: Handle API errors
-      setError(err.message || 'Failed to save settings');
+      setError(err.response?.data?.message || 'Failed to save settings');
       console.error('Failed to save settings:', err);
     } finally {
       setIsLoading(false);
@@ -78,6 +74,12 @@ const SettingsPage = () => {
         <h1 className="text-3xl font-bold text-gray-800">Settings</h1>
         <p className="text-gray-600 mt-1">Manage your restaurant configuration</p>
       </div>
+
+      {error && (
+        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          ⚠️ {error}
+        </div>
+      )}
 
       {isSaved && (
         <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
@@ -122,114 +124,166 @@ const SettingsPage = () => {
 
         {/* Tab Content */}
         <div className="p-6">
-          {activeTab === 'general' && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Restaurant Name
-                </label>
-                <input
-                  type="text"
-                  value={settings.restaurantName}
-                  onChange={(e) => handleInputChange('restaurantName', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={settings.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={settings.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  value={settings.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Timezone
-                  </label>
-                  <select
-                    value={settings.timezone}
-                    onChange={(e) => handleInputChange('timezone', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option>UTC-5</option>
-                    <option>UTC-6</option>
-                    <option>UTC-7</option>
-                    <option>UTC</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Currency
-                  </label>
-                  <select
-                    value={settings.currency}
-                    onChange={(e) => handleInputChange('currency', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option>USD</option>
-                    <option>EUR</option>
-                    <option>GBP</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Theme
-                  </label>
-                  <select
-                    value={settings.theme}
-                    onChange={(e) => handleInputChange('theme', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option>Light</option>
-                    <option>Dark</option>
-                  </select>
-                </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading settings...</p>
               </div>
             </div>
-          )}
+          ) : (
+            <>
+              {activeTab === 'general' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Restaurant Name
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.restaurant_name || ''}
+                      onChange={(e) => handleInputChange('restaurant_name', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="Enter restaurant name"
+                    />
+                  </div>
 
-          {activeTab === 'users' && (
-            <div className="text-center py-8">
-              <p className="text-gray-600">User Management features coming soon</p>
-            </div>
-          )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={settings.email || ''}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="contact@restaurant.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={settings.phone || ''}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="+1234567890"
+                      />
+                    </div>
+                  </div>
 
-          {activeTab === 'payment' && (
-            <div className="text-center py-8">
-              <p className="text-gray-600">Payment Settings features coming soon</p>
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.address || ''}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="123 Main St, City, State"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Hours
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.business_hours || ''}
+                      onChange={(e) => handleInputChange('business_hours', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder="Mon-Fri: 11AM - 10PM, Sat-Sun: 10AM - 11PM"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Timezone
+                      </label>
+                      <select
+                        value={settings.timezone || 'UTC+6'}
+                        onChange={(e) => handleInputChange('timezone', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="UTC-12">UTC-12</option>
+                        <option value="UTC-11">UTC-11</option>
+                        <option value="UTC-10">UTC-10</option>
+                        <option value="UTC-9">UTC-9</option>
+                        <option value="UTC-8">UTC-8</option>
+                        <option value="UTC-7">UTC-7</option>
+                        <option value="UTC-6">UTC-6</option>
+                        <option value="UTC-5">UTC-5</option>
+                        <option value="UTC-4">UTC-4</option>
+                        <option value="UTC-3">UTC-3</option>
+                        <option value="UTC-2">UTC-2</option>
+                        <option value="UTC-1">UTC-1</option>
+                        <option value="UTC">UTC</option>
+                        <option value="UTC+1">UTC+1</option>
+                        <option value="UTC+2">UTC+2</option>
+                        <option value="UTC+3">UTC+3</option>
+                        <option value="UTC+4">UTC+4</option>
+                        <option value="UTC+5">UTC+5</option>
+                        <option value="UTC+6">UTC+6 (Bangladesh)</option>
+                        <option value="UTC+7">UTC+7</option>
+                        <option value="UTC+8">UTC+8</option>
+                        <option value="UTC+9">UTC+9</option>
+                        <option value="UTC+10">UTC+10</option>
+                        <option value="UTC+11">UTC+11</option>
+                        <option value="UTC+12">UTC+12</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Currency
+                      </label>
+                      <select
+                        value={settings.currency || 'BDT'}
+                        onChange={(e) => handleInputChange('currency', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="BDT">BDT (৳)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="INR">INR (₹)</option>
+                        <option value="JPY">JPY (¥)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Theme
+                      </label>
+                      <select
+                        value={settings.theme || 'light'}
+                        onChange={(e) => handleInputChange('theme', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'users' && (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">User Management features coming soon</p>
+                </div>
+              )}
+
+              {activeTab === 'payment' && (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">Payment Settings features coming soon</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -237,9 +291,12 @@ const SettingsPage = () => {
         <div className="border-t p-6 flex justify-end">
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+            disabled={isLoading}
+            className={`px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Save Settings
+            {isLoading ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </div>

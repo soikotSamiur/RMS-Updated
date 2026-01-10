@@ -1,4 +1,8 @@
+import { useSettings } from '../../../context/SettingsContext';
+
 const VisitUs = () => {
+  const { settings } = useSettings();
+
   return (
     <section className="max-w-6xl px-5 md:px-0 mx-auto py-16 flex flex-col md:flex-row gap-8 items-center">
       <div className="flex-1">
@@ -9,15 +13,15 @@ const VisitUs = () => {
         </p>
         <div className="mb-4">
           <p><i className="fa-solid fa-location-dot"></i></p>
-          <strong>Location</strong><br />Road 12, Sector 10, Uttara, Dhaka Bangladesh
+          <strong>Location</strong><br />{settings.address || 'Road 12, Sector 10, Uttara, Dhaka Bangladesh'}
         </div>
         <div className="mb-4">
           <p><i className="fa-solid fa-clock"></i></p>
-          <strong>Hours</strong><br />Mon-Fri: 11AM - 10PM<br />Sat-Sun: 10AM - 11PM
+          <strong>Hours</strong><br />{settings.business_hours || 'Mon-Fri: 11AM - 10PM, Sat-Sun: 10AM - 11PM'}
         </div>
         <div className="mb-4">
           <p><i className="fa-solid fa-phone"></i></p>
-          <strong>Contact</strong><br />(555) 123-4567<br />info@dinesmart.com
+          <strong>Contact</strong><br />{settings.phone || '(555) 123-4567'}<br />{settings.email || 'info@dinesmart.com'}
         </div>
       </div>
 

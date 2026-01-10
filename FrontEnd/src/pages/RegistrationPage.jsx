@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 const RegistrationPage = () => {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     ownerName: '',
     email: '',
@@ -115,7 +117,7 @@ const RegistrationPage = () => {
                   <li><Link to="/login" className="text-gray-700 font-semibold">Sign In</Link></li>
                 </ul>
               </div>
-              <Link to="/" className="text-2xl text-orange-500 font-bold">DineSmart</Link>
+              <Link to="/" className="text-2xl text-orange-500 font-bold">{settings.restaurant_name || 'DineSmart'}</Link>
             </div>
             <div className="navbar-end hidden lg:flex">
               <ul className="menu menu-horizontal px-1 flex items-center">

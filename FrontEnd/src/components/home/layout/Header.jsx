@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useSettings } from '../../../context/SettingsContext';
 
 const Header = () => {
+  const { settings } = useSettings();
+
   return (
     <header className="bg-white max-w-[1300px] mx-auto">
       <div className="navbar  shadow-sm">
@@ -18,7 +21,7 @@ const Header = () => {
               <li><Link to="/register" className="text-gray-700 font-semibold">Register</Link></li>
             </ul>
           </div>
-          <Link to="/" className="text-2xl text-orange-500 font-bold">DineSmart</Link>
+          <Link to="/" className="text-2xl text-orange-500 font-bold">{settings.restaurant_name || 'DineSmart'}</Link>
         </div>
         <div className="navbar-end hidden lg:flex">
           <ul className="menu menu-horizontal px-1 flex items-center">

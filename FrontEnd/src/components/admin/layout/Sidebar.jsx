@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useSettings } from '../../../context/SettingsContext';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     const location = useLocation();
 
     const { user, logout } = useAuth();
+    const { settings } = useSettings();
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-line', path: '/admin/dashboard', allowedRoles: ['Admin','Waiter','Chef','Cashier'] },
@@ -21,7 +23,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
         <aside className={`fixed h-full w-64 bg-white text-black shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col sidebar-scroll z-50 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0`}>
             <div className="flex items-center justify-center p-6">
-                <h1 className="text-3xl font-bold text-orange-500">DineSmart</h1>
+                <h1 className="text-3xl font-bold text-orange-500">{settings.restaurant_name || 'DineSmart'}</h1>
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-4 text-gray-700 text-sm overflow-y-auto">

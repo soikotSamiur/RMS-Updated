@@ -5,6 +5,7 @@ import menuService from './menuService';
 import orderService from './orderService';
 import inventoryService from './inventoryService';
 import reportsService from './reportsService';
+import settingsService from './settingsService';
 
 // Export auth for backward compatibility
 export const auth = authService;
@@ -15,7 +16,8 @@ const apiService = {
   auth: authService,
   orders: orderService,
   inventory: inventoryService,
-  reports: reportsService
+  reports: reportsService,
+  settings: settingsService
 };
 
 export default apiService;
