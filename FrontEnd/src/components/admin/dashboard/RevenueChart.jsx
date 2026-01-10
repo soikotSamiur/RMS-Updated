@@ -1,51 +1,38 @@
-import { useState, useEffect } from 'react';
-
-const RevenueChart = () => {
-  // MOCK DATA (REMOVE WHEN BACKEND IS AVAILABLE):
-  // - Replace with `apiService.dashboard.getRevenueChart(period)` when backend is ready.
-  const [revenueData, setRevenueData] = useState([
-    { day: "Mon", height: "60px", revenue: "$3,200" },
-    { day: "Tue", height: "90px", revenue: "$4,800" },
-    { day: "Wed", height: "70px", revenue: "$3,800" },
-    { day: "Thu", height: "120px", revenue: "$5,200" },
-    { day: "Fri", height: "100px", revenue: "$4,500" },
-    { day: "Sat", height: "140px", revenue: "$6,200" },
-    { day: "Sun", height: "110px", revenue: "$5,100" }
-  ]);
-
-  useEffect(() => {
-    fetchRevenueData();
-  }, []);
-
-  const fetchRevenueData = async () => {
-    try {
-      // TODO: API CALL - Get revenue chart data for the week
-      // TODO: import apiService from '../../../services/apiService';
-      // TODO: const response = await apiService.dashboard.getRevenueChart('week');
-      // TODO: setRevenueData(response.chartData);
-      
-      // CURRENT: Mock data - remove when API is ready
-    } catch (err) {
-      // TODO: Handle API errors
-      console.error('Failed to fetch revenue data:', err.message);
-    }
-  };
-
+const RevenueChart = ({ dailyTrends }) => {
   return (
-    <div className="bg-white rounded-lg p-4 shadow">
-      <h2 className="font-semibold mb-3 text-black">Revenue Trend</h2>
-      <p className="text-gray-600 mb-4 text-sm">Daily revenue this week</p>
-      <div className="h-48 flex items-end justify-center space-x-2 md:space-x-6 px-2 md:px-4 overflow-x-auto">
-        {revenueData.map((item, index) => (
-          <div key={index} className="flex flex-col items-center space-y-1 flex-shrink-0">
-            <div 
-              className="bg-orange-500 rounded w-8 md:w-12 transition-all duration-300 hover:bg-orange-600 cursor-pointer"
-              style={{ height: item.height }}
-              title={`Revenue: ${item.revenue}`}
-            ></div>
-            <span className="text-xs text-gray-600">{item.day}</span>
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <i className="fas fa-chart-line text-orange-500 mr-2"></i>
+        Revenue Trend
+      </h2>
+      <p className="text-sm text-gray-600 mb-4">Last 12 months performance</p>
+      <div className="h-64 flex items-end justify-between space-x-2">
+        {dailyTrends.length > 0 ? (
+          dailyTrends.map((data, index) => {
+            const maxRevenue = Math.max(...dailyTrends.map(d => d.revenue));
+            const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center group">
+                <div className="relative w-full">
+                  <div 
+                    className="bg-orange-500 rounded-t hover:bg-orange-600 transition-colors cursor-pointer"
+                    style={{ height: `${height * 2}px`, minHeight: '8px' }}
+                  >
+                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      ৳{data.revenue.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 mt-2">{data.month}</div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="w-full flex items-center justify-center h-full">
+            <p className="text-gray-400">No data available</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

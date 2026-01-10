@@ -8,6 +8,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\DashboardController;
 
 // API Routes
 
@@ -90,3 +91,10 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
     Route::put('/settings', [SettingsController::class, 'update']);
 });
 
+// Dashboard Routes - Admin, Waiter, Chef, Cashier, Employee can access
+Route::middleware(['auth:sanctum', 'role:Admin,Waiter,Chef,Cashier,Employee'])->group(function () {
+    Route::get('/dashboard/stats', [DashboardController::class, 'getDashboardStats']);
+    Route::get('/dashboard/daily-trends', [DashboardController::class, 'getDailyTrends']);
+    Route::get('/dashboard/category-distribution', [DashboardController::class, 'getCategoryDistribution']);
+    Route::get('/dashboard/top-selling', [DashboardController::class, 'getTopSellingProducts']);
+});

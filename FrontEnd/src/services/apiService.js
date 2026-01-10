@@ -6,6 +6,7 @@ import orderService from './orderService';
 import inventoryService from './inventoryService';
 import reportsService from './reportsService';
 import settingsService from './settingsService';
+import dashboardService from './dashboardService';
 
 // Export auth for backward compatibility
 export const auth = authService;
@@ -17,7 +18,8 @@ const apiService = {
   orders: orderService,
   inventory: inventoryService,
   reports: reportsService,
-  settings: settingsService
+  settings: settingsService,
+  dashboard: dashboardService
 };
 
 export default apiService;

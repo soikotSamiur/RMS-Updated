@@ -32,7 +32,7 @@ class ReportController extends Controller
             ->select(
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('COUNT(*) as orders'),
-                DB::raw('SUM(total) as revenue')
+                DB::raw('SUM(total) as totalPrice')
             )
             ->groupBy('date')
             ->orderBy('date', 'asc')
@@ -49,10 +49,12 @@ class ReportController extends Controller
             $daySales = $salesData->firstWhere('date', $dateString);
             
             if ($daySales) {
-                $revenue = (float) $daySales->revenue;
+                $totalPrice = (float) $daySales->totalPrice;
+                $revenue = $totalPrice * 0.40;  // Revenue is 40% of total price
                 $orders = $daySales->orders;
-                $averageOrder = $orders > 0 ? $revenue / $orders : 0;
+                $averageOrder = $orders > 0 ? $totalPrice / $orders : 0;
             } else {
+                $totalPrice = 0;
                 $revenue = 0;
                 $orders = 0;
                 $averageOrder = 0;
@@ -60,6 +62,7 @@ class ReportController extends Controller
 
             $formattedData[] = [
                 'date' => $dateString,
+                'totalPrice' => $totalPrice,
                 'revenue' => $revenue,
                 'orders' => $orders,
                 'averageOrder' => round($averageOrder, 2)
