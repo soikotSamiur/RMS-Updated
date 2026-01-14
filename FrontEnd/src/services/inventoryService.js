@@ -5,20 +5,15 @@ import API from './axios';
 const inventoryService = {
   // Get all inventory items with optional filters
   getInventory: async (filters = {}) => {
-    const params = new URLSearchParams();
-    if (filters.category && filters.category !== 'all') {
-      params.append('category', filters.category);
-    }
-    if (filters.status && filters.status !== 'all') {
-      params.append('status', filters.status);
-    }
-    if (filters.search) {
-      params.append('search', filters.search);
-    }
+    const params = {
+      page: filters.page || 1,
+      per_page: filters.per_page || 15,
+      category: filters.category || 'all',
+      status: filters.status || 'all',
+      search: filters.search || ''
+    };
     
-    const queryString = params.toString();
-    const url = queryString ? `/inventory?${queryString}` : '/inventory';
-    const res = await API.get(url);
+    const res = await API.get('/inventory', { params });
     return res.data;
   },
 

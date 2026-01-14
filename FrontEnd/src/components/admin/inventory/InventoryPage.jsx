@@ -13,7 +13,6 @@ import Pagination from '../../common/Pagination';
 const InventoryPage = () => {
   const { user } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -21,15 +20,27 @@ const InventoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [filters, setFilters] = useState({
+    search: '',
+    category: 'all',
+    status: 'all'
+  });
 
-  const fetchInventory = async (filters = {}) => {
+  const fetchInventory = async () => {
     try {
       setIsLoading(true);
-      const response = await apiService.inventory.getInventory(filters);
+      const response = await apiService.inventory.getInventory({
+        page: currentPage,
+        per_page: itemsPerPage,
+        ...filters
+      });
       
       if (response.success) {
         setInventoryItems(response.data);
-        setFilteredItems(response.data);
+        setTotalItems(response.pagination?.total || 0);
+        setTotalPages(response.pagination?.total_pages || 0);
       }
       setIsLoading(false);
     } catch (err) {
@@ -39,22 +50,15 @@ const InventoryPage = () => {
     }
   };
 
-  // Initialize inventory
+  // Initialize inventory and refetch when pagination or filters change
   useEffect(() => {
     fetchInventory();
-  }, []);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  }, [currentPage, itemsPerPage, filters]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filteredItems]);
+  }, [filters, itemsPerPage]);
 
   const showNotification = (message, type = 'info') => {
     setNotification({ show: true, message, type });
@@ -64,15 +68,11 @@ const InventoryPage = () => {
   };
 
   const filterInventory = (searchTerm = '', categoryFilter = 'all', statusFilter = 'all') => {
-    const filtered = inventoryItems.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-
-      return matchesSearch && matchesCategory && matchesStatus;
+    setFilters({
+      search: searchTerm,
+      category: categoryFilter,
+      status: statusFilter
     });
-
-    setFilteredItems(filtered);
   };
 
   const handleAddItem = async (newItemData) => {
@@ -166,17 +166,6 @@ const InventoryPage = () => {
     showNotification('Inventory refreshed!', 'success');
   };
 
-  if (isLoading) {
-    return (
-      <div className="page-content p-4 md:p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading inventory...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="page-content  md:p-2">
       {/* Header */}
@@ -226,26 +215,41 @@ const InventoryPage = () => {
 
       <SearchFilterBar onFilter={filterInventory} />
       
-      <InventoryTable 
-        items={paginatedItems}
-        onEdit={openEditItemModal}
-        onUpdateStock={updateStock}
-        onDelete={deleteItem}
-      />
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        </div>
+      )}
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        itemsPerPage={itemsPerPage}
-        totalItems={filteredItems.length}
-        onItemsPerPageChange={setItemsPerPage}
-      />
+      {/* Inventory Display */}
+      {!isLoading && inventoryItems.length > 0 && (
+        <>
+          <InventoryTable 
+            items={inventoryItems}
+            onEdit={openEditItemModal}
+            onUpdateStock={updateStock}
+            onDelete={deleteItem}
+          />
 
-      <LowStocksAlerts 
-        inventoryItems={inventoryItems}
-        onReorder={reorderItem}
-      />
+          {/* Pagination */}
+          {totalItems > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={totalItems}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+
+          <LowStocksAlerts 
+            inventoryItems={inventoryItems}
+            onReorder={reorderItem}
+          />
+        </>
+      )}
 
       {showAddModal && (
         <AddItemModal 

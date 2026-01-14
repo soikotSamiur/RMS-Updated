@@ -22,9 +22,12 @@ const menuService = {
     }
   },
 
-  getMenuItems: async () => {
+  getMenuItems: async (params = {}) => {
     try {
-      const res = await API.get('/menu-items');
+      const { page = 1, per_page = 15, category = 'all', search = '' } = params;
+      const res = await API.get('/menu-items', {
+        params: { page, per_page, category, search }
+      });
       return res.data;
     } 
     catch (error) {

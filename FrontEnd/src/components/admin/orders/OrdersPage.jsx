@@ -109,63 +109,71 @@ const OrdersPage = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [orderStats, setOrderStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    preparing: 0,
+    ready: 0,
+    cancelled: 0
+  });
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [currentPage, itemsPerPage, selectedStatus]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await apiService.orders.getOrders();
+      const response = await apiService.orders.getOrders({
+        page: currentPage,
+        per_page: itemsPerPage,
+        status: selectedStatus
+      });
       setOrders(response.data || []);
+      const total = response.pagination?.total || 0;
+      setTotalItems(total);
+      setTotalPages(response.pagination?.total_pages || 0);
+      
+      // Calculate stats with correct counts from backend
+      calculateStats(total, response.status_counts || {});
       setError(null);
     } catch (err) {
       setError(err.message || 'Failed to fetch orders');
       console.error('Failed to fetch orders:', err);
-      // Set empty array on error
       setOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter orders based on selected status
-  const filteredOrders = selectedStatus === 'all' 
-    ? orders 
-    : orders.filter(order => order.status === selectedStatus);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+  // Calculate order statistics
+  const calculateStats = (total, statusCounts) => {
+    const stats = {
+      total: total,
+      completed: statusCounts.completed || 0,
+      pending: statusCounts.pending || 0,
+      preparing: statusCounts.preparing || 0,
+      ready: statusCounts.ready || 0,
+      cancelled: statusCounts.cancelled || 0
+    };
+    setOrderStats(stats);
+  };
 
   // Reset to page 1 when status filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatus]);
-
-  // Calculate order statistics
-  const orderStats = {
-    total: orders.length,
-    completed: orders.filter(order => order.status === 'completed').length,
-    pending: orders.filter(order => order.status === 'pending').length,
-    preparing: orders.filter(order => order.status === 'preparing').length,
-    ready: orders.filter(order => order.status === 'ready').length,
-    cancelled: orders.filter(order => order.status === 'cancelled').length
-  };
+  }, [selectedStatus, itemsPerPage]);
 
   // Update order status
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const response = await apiService.orders.updateOrderStatus(orderId, newStatus);
       if (response.success) {
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
-            order.id === orderId ? response.data : order
-          )
-        );
+        // Refresh orders after status update
+        await fetchOrders();
       }
       setError(null);
     } catch (err) {
@@ -181,8 +189,9 @@ const OrdersPage = () => {
   };
 
   // Handle new order creation
-  const handleOrderCreated = (newOrder) => {
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
+  const handleOrderCreated = async (newOrder) => {
+    // Refresh orders after creation
+    await fetchOrders();
     setError(null);
   };
 
@@ -193,12 +202,9 @@ const OrdersPage = () => {
   };
 
   // Handle order update
-  const handleOrderUpdated = (updatedOrder) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === updatedOrder.id ? updatedOrder : order
-      )
-    );
+  const handleOrderUpdated = async (updatedOrder) => {
+    // Refresh orders after update
+    await fetchOrders();
     setEditingOrder(null);
     setError(null);
   };
@@ -277,26 +283,26 @@ const OrdersPage = () => {
         <>
           {viewMode === 'grid' ? (
             <OrderCardsGrid 
-              orders={paginatedOrders}
+              orders={orders}
               onStatusUpdate={updateOrderStatus}
               onEditOrder={handleEditOrder}
             />
           ) : (
             <OrderTable 
-              orders={paginatedOrders}
+              orders={orders}
               onStatusUpdate={updateOrderStatus}
               onEditOrder={handleEditOrder}
             />
           )}
 
           {/* Pagination */}
-          {filteredOrders.length > 0 && (
+          {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               itemsPerPage={itemsPerPage}
-              totalItems={filteredOrders.length}
+              totalItems={totalItems}
               onItemsPerPageChange={setItemsPerPage}
             />
           )}

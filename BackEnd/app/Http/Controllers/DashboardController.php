@@ -8,6 +8,7 @@ use App\Models\MenuItem;
 use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -17,57 +18,62 @@ class DashboardController extends Controller
      */
     public function getDashboardStats()
     {
-        // Get current month data
-        $currentMonthStart = Carbon::now()->startOfMonth();
-        $currentMonthEnd = Carbon::now()->endOfMonth();
-        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
-        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
-        
-        // Total Revenue - This month (40% of total sales)
-        $totalSales = Order::whereBetween('created_at', [$currentMonthStart, $currentMonthEnd])
-            ->where('status', '!=', 'cancelled')
-            ->sum('total');
-        
-        $totalRevenue = $totalSales * 0.40;
-        
-        $lastMonthSales = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
-            ->where('status', '!=', 'cancelled')
-            ->sum('total');
-        
-        $lastMonthRevenue = $lastMonthSales * 0.40;
-        
-        $revenueChange = $lastMonthRevenue > 0 
-            ? (($totalRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 
-            : 0;
-        
-        // Today's Orders
-        $todayOrders = Order::whereDate('created_at', Carbon::today())
-            ->count();
-        
-        $yesterdayOrders = Order::whereDate('created_at', Carbon::yesterday())
-            ->count();
-        
-        $ordersChange = $yesterdayOrders > 0 
-            ? (($todayOrders - $yesterdayOrders) / $yesterdayOrders) * 100 
-            : 0;
-        
-        // Average Order Value
-        $totalOrdersValue = Order::where('status', '!=', 'cancelled')->sum('total');
-        $totalOrdersCount = Order::where('status', '!=', 'cancelled')->count();
-        $avgOrderValue = $totalOrdersCount > 0 ? $totalOrdersValue / $totalOrdersCount : 0;
-        
-        // For comparison, get last month's average
-        $lastMonthTotalValue = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
-            ->where('status', '!=', 'cancelled')
-            ->sum('total');
-        $lastMonthTotalCount = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
-            ->where('status', '!=', 'cancelled')
-            ->count();
-        $lastMonthAvg = $lastMonthTotalCount > 0 ? $lastMonthTotalValue / $lastMonthTotalCount : 0;
-        
-        $avgChange = $lastMonthAvg > 0 
-            ? (($avgOrderValue - $lastMonthAvg) / $lastMonthAvg) * 100 
-            : 0;
+        // Cache for 5 minutes to improve performance
+        return Cache::remember('dashboard_stats', 300, function () {
+            // Get current month data
+            $currentMonthStart = Carbon::now()->startOfMonth();
+            $currentMonthEnd = Carbon::now()->endOfMonth();
+            $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+            $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+            
+            // Optimize: Get all monthly stats in one query
+            $monthlyStats = Order::where('status', '!=', 'cancelled')
+                ->whereBetween('created_at', [$lastMonthStart, $currentMonthEnd])
+                ->selectRaw('
+                    SUM(CASE WHEN created_at >= ? THEN total ELSE 0 END) as current_month_sales,
+                    SUM(CASE WHEN created_at < ? THEN total ELSE 0 END) as last_month_sales
+                ', [$currentMonthStart, $currentMonthStart])
+                ->first();
+            
+            $totalSales = $monthlyStats->current_month_sales ?? 0;
+            $lastMonthSales = $monthlyStats->last_month_sales ?? 0;
+            
+            $totalRevenue = $totalSales * 0.40;
+            $lastMonthRevenue = $lastMonthSales * 0.40;
+            
+            $revenueChange = $lastMonthRevenue > 0 
+                ? (($totalRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 
+                : 0;
+            
+            // Optimize: Get today and yesterday orders in one query
+            $orderStats = Order::whereBetween('created_at', [Carbon::yesterday()->startOfDay(), Carbon::now()->endOfDay()])
+                ->selectRaw('
+                    COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as today_orders,
+                    COUNT(CASE WHEN DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 END) as yesterday_orders
+                ')
+                ->first();
+            
+            $todayOrders = $orderStats->today_orders ?? 0;
+            $yesterdayOrders = $orderStats->yesterday_orders ?? 0;
+            
+            $ordersChange = $yesterdayOrders > 0 
+                ? (($todayOrders - $yesterdayOrders) / $yesterdayOrders) * 100 
+                : 0;
+            
+            // Optimize: Get average order value stats in one query
+            $avgStats = Order::where('status', '!=', 'cancelled')
+                ->selectRaw('
+                    AVG(total) as overall_avg,
+                    AVG(CASE WHEN created_at BETWEEN ? AND ? THEN total END) as last_month_avg
+                ', [$lastMonthStart, $lastMonthEnd])
+                ->first();
+            
+            $avgOrderValue = $avgStats->overall_avg ?? 0;
+            $lastMonthAvg = $avgStats->last_month_avg ?? 0;
+            
+            $avgChange = $lastMonthAvg > 0 
+                ? (($avgOrderValue - $lastMonthAvg) / $lastMonthAvg) * 100 
+                : 0;
         
         return response()->json([
             'success' => true,
@@ -89,6 +95,7 @@ class DashboardController extends Controller
                 ]
             ]
         ]);
+        });
     }
     
     /**
@@ -96,36 +103,35 @@ class DashboardController extends Controller
      */
     public function getDailyTrends()
     {
-        // Get data for the last 12 months
-        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
-        $endDate = Carbon::now()->endOfMonth();
+        // Cache for 5 minutes
+        return Cache::remember('dashboard_daily_trends', 300, function () {
+            // Get data for the last 12 months
+            $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+            $endDate = Carbon::now()->endOfMonth();
         
+        // Optimize: Use raw SQL with proper grouping
         $monthlyData = Order::whereBetween('created_at', [$startDate, $endDate])
             ->where('status', '!=', 'cancelled')
-            ->select(
-                DB::raw('YEAR(created_at) as year'),
-                DB::raw('MONTH(created_at) as month'),
-                DB::raw('SUM(total) as revenue')
-            )
-            ->groupBy('year', 'month')
-            ->orderBy('year', 'asc')
-            ->orderBy('month', 'asc')
-            ->get();
+            ->selectRaw('
+                YEAR(created_at) as year,
+                MONTH(created_at) as month,
+                SUM(total) * 0.40 as revenue
+            ')
+            ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
+            ->orderBy(DB::raw('YEAR(created_at)'))
+            ->orderBy(DB::raw('MONTH(created_at)'))
+            ->get()
+            ->keyBy(function($item) {
+                return $item->year . '-' . $item->month;
+            });
         
         // Format data for chart
         $formattedData = [];
         $currentDate = $startDate->copy();
         
         while ($currentDate <= $endDate) {
-            $year = $currentDate->year;
-            $month = $currentDate->month;
-            
-            $monthData = $monthlyData->first(function($item) use ($year, $month) {
-                return $item->year == $year && $item->month == $month;
-            });
-            
-            $totalSales = $monthData ? (float) $monthData->revenue : 0;
-            $revenue = $totalSales * 0.40; // Revenue is 40% of total sales
+            $key = $currentDate->year . '-' . $currentDate->month;
+            $revenue = isset($monthlyData[$key]) ? (float) $monthlyData[$key]->revenue : 0;
             
             $formattedData[] = [
                 'month' => $currentDate->format('M'),
@@ -139,6 +145,7 @@ class DashboardController extends Controller
             'success' => true,
             'data' => $formattedData
         ]);
+        });
     }
     
     /**
@@ -146,19 +153,9 @@ class DashboardController extends Controller
      */
     public function getCategoryDistribution()
     {
-        // Get all menu items with their categories and sales
-        $categoryData = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', '!=', 'cancelled')
-            ->select(
-                'menu_items.category',
-                DB::raw('SUM(order_items.quantity) as totalQuantity'),
-                DB::raw('SUM(order_items.price * order_items.quantity) as totalRevenue')
-            )
-            ->groupBy('menu_items.category')
-            ->get();
-        
-        // Map categories to proper names
+        // Cache for 5 minutes
+        return Cache::remember('dashboard_category_distribution', 300, function () {
+            // Map categories to proper names
         $categoryMap = [
             'appetizers' => 'Appetizers',
             'main-courses' => 'Main Courses',
@@ -169,23 +166,32 @@ class DashboardController extends Controller
             'salads' => 'Salads'
         ];
         
-        $formattedData = $categoryData->map(function($item) use ($categoryMap) {
-            $categoryName = $categoryMap[$item->category] ?? ucfirst(str_replace('-', ' ', $item->category));
-            
-            $totalSales = (float) $item->totalRevenue;
-            $revenue = $totalSales * 0.40; // Revenue is 40% of total sales
-            
-            return [
-                'category' => $categoryName,
-                'value' => $revenue,
-                'quantity' => $item->totalQuantity
-            ];
-        });
+        // Optimize: Calculate revenue directly in SQL
+        $categoryData = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->selectRaw('
+                menu_items.category,
+                SUM(order_items.quantity) as totalQuantity,
+                SUM(order_items.price * order_items.quantity) * 0.40 as revenue
+            ')
+            ->groupBy('menu_items.category')
+            ->get()
+            ->map(function($item) use ($categoryMap) {
+                $categoryName = $categoryMap[$item->category] ?? ucfirst(str_replace('-', ' ', $item->category));
+                
+                return [
+                    'category' => $categoryName,
+                    'value' => (float) $item->revenue,
+                    'quantity' => $item->totalQuantity
+                ];
+            });
         
         return response()->json([
             'success' => true,
-            'data' => $formattedData
+            'data' => $categoryData
         ]);
+        });
     }
 
     /**
@@ -193,23 +199,8 @@ class DashboardController extends Controller
      */
     public function getTopSellingProducts()
     {
-        $topProducts = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', '!=', 'cancelled')
-            ->select(
-                'menu_items.id',
-                'menu_items.name',
-                'menu_items.price',
-                'menu_items.image',
-                'menu_items.category',
-                DB::raw('SUM(order_items.quantity) as totalSold'),
-                DB::raw('SUM(order_items.price * order_items.quantity) as totalRevenue')
-            )
-            ->groupBy('menu_items.id', 'menu_items.name', 'menu_items.price', 'menu_items.image', 'menu_items.category')
-            ->orderBy('totalSold', 'desc')
-            ->limit(5)
-            ->get();
-
+        // Cache for 5 minutes
+        return Cache::remember('dashboard_top_selling', 300, function () {
         // Map categories to proper names
         $categoryMap = [
             'appetizers' => 'Appetizers',
@@ -220,27 +211,42 @@ class DashboardController extends Controller
             'sides' => 'Sides',
             'salads' => 'Salads'
         ];
-
-        $formattedData = $topProducts->map(function($item) use ($categoryMap) {
-            $categoryName = $categoryMap[$item->category] ?? ucfirst(str_replace('-', ' ', $item->category));
-            
-            $totalSales = (float) $item->totalRevenue;
-            $revenue = $totalSales * 0.40; // Revenue is 40% of total sales
-            
-            return [
-                'id' => $item->id,
-                'name' => $item->name,
-                'price' => (float) $item->price,
-                'image' => $item->image,
-                'category' => $categoryName,
-                'totalSold' => $item->totalSold,
-                'totalRevenue' => round($revenue, 2)
-            ];
-        });
+        
+        // Optimize: Calculate revenue directly in SQL and limit results
+        $topProducts = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->selectRaw('
+                menu_items.id,
+                menu_items.name,
+                menu_items.price,
+                menu_items.image,
+                menu_items.category,
+                SUM(order_items.quantity) as totalSold,
+                SUM(order_items.price * order_items.quantity) * 0.40 as totalRevenue
+            ')
+            ->groupBy('menu_items.id', 'menu_items.name', 'menu_items.price', 'menu_items.image', 'menu_items.category')
+            ->orderByDesc(DB::raw('SUM(order_items.quantity)'))
+            ->limit(5)
+            ->get()
+            ->map(function($item) use ($categoryMap) {
+                $categoryName = $categoryMap[$item->category] ?? ucfirst(str_replace('-', ' ', $item->category));
+                
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'price' => (float) $item->price,
+                    'image' => $item->image,
+                    'category' => $categoryName,
+                    'totalSold' => $item->totalSold,
+                    'totalRevenue' => round((float) $item->totalRevenue, 2)
+                ];
+            });
 
         return response()->json([
             'success' => true,
-            'data' => $formattedData
+            'data' => $topProducts
         ]);
+        });
     }
 }

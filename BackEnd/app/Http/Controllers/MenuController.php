@@ -41,29 +41,65 @@ class MenuController extends Controller
     }
     
     // Get all menu items
-    public function getMenuItems()
+    public function getMenuItems(Request $request)
     {
-        $menuItems = MenuItem::all()->map(function($item) {
-            return [
-                'id' => $item->id,
-                'name' => $item->name,
-                'description' => $item->description,
-                'price' => (float) $item->price,
-                'category' => $item->category,
-                'image' => $item->image,
-                'preparationTime' => $item->preparation_time,
-                'available' => $item->available,
-                'ingredients' => $item->ingredients ? explode(', ', $item->ingredients) : [],
-                'allergens' => $item->allergens ? explode(', ', $item->allergens) : [],
-                'isVegetarian' => $item->is_vegetarian,
-                'isVegan' => $item->is_vegan,
-                'spicyLevel' => $item->spicy_level
-            ];
-        });
-        
+        // Get pagination parameters
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 15);
+        $category = $request->input('category', 'all');
+        $search = $request->input('search', '');
+
+        // Build query
+        $query = MenuItem::query();
+
+        // Filter by category
+        if ($category !== 'all') {
+            $query->where('category', $category);
+        }
+
+        // Filter by search
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Get total count before pagination
+        $total = $query->count();
+
+        // Apply pagination
+        $menuItems = $query
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'price' => (float) $item->price,
+                    'category' => $item->category,
+                    'image' => $item->image,
+                    'preparationTime' => $item->preparation_time,
+                    'available' => $item->available,
+                    'ingredients' => $item->ingredients ? explode(', ', $item->ingredients) : [],
+                    'allergens' => $item->allergens ? explode(', ', $item->allergens) : [],
+                    'isVegetarian' => $item->is_vegetarian,
+                    'isVegan' => $item->is_vegan,
+                    'spicyLevel' => $item->spicy_level
+                ];
+            });
+
         return response()->json([
             'success' => true,
-            'data' => $menuItems
+            'data' => $menuItems,
+            'pagination' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'total_pages' => ceil($total / $perPage)
+            ]
         ]);
     }
     

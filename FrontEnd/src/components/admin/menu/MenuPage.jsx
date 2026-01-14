@@ -26,30 +26,53 @@ const MenuPage = () => {
     const [tableNumber, setTableNumber] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
     useEffect(() => {
-        fetchMenuData();
+        fetchCategories();
     }, []);
 
-    const fetchMenuData = async () => {
+    useEffect(() => {
+        fetchMenuItems();
+    }, [currentPage, itemsPerPage, selectedCategory, searchQuery]);
+
+    const fetchCategories = async () => {
+        try {
+            const categoriesRes = await apiService.menu.getCategories();
+            setCategories(categoriesRes.data || []);
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    };
+
+    const fetchMenuItems = async () => {
         try {
             setLoading(true);
             setError(null);
             
-            const [categoriesRes, itemsRes] = await Promise.all([
-                apiService.menu.getCategories(),
-                apiService.menu.getMenuItems()
-            ]);
+            const response = await apiService.menu.getMenuItems({
+                page: currentPage,
+                per_page: itemsPerPage,
+                category: selectedCategory,
+                search: searchQuery
+            });
             
-            setCategories(categoriesRes.data || []);
-            setMenuItems(itemsRes.data || []);
+            setMenuItems(response.data || []);
+            setTotalItems(response.pagination?.total || 0);
+            setTotalPages(response.pagination?.total_pages || 0);
         } catch (err) {
-            console.error('Failed to fetch menu data:', err);
+            console.error('Failed to fetch menu items:', err);
             setError(err.message || 'Failed to fetch menu');
             showNotification('Error loading menu data', 'error');
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchMenuData = async () => {
+        await fetchCategories();
+        await fetchMenuItems();
     };
 
     // Show notification
@@ -58,24 +81,10 @@ const MenuPage = () => {
         setTimeout(() => setNotification(null), 3000);
     };
 
-    // Filter menu items based on category and search
-    const filteredItems = menuItems.filter(item => {
-        const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-    });
-
-    // Pagination logic
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedItems = filteredItems.slice(startIndex, endIndex);
-
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, searchQuery, itemsPerPage]);
 
     // Add item to cart
     const addToCart = (item) => {
@@ -131,7 +140,7 @@ const MenuPage = () => {
     // Calculate menu stats
     const getMenuStats = () => {
         return {
-            totalItems: menuItems.length,
+            totalItems: totalItems,
             totalCategories: categories.length - 1, // Exclude 'all' category
             availableItems: menuItems.filter(item => item.available).length,
             outOfStock: menuItems.filter(item => !item.available).length
@@ -145,13 +154,12 @@ const MenuPage = () => {
             const response = await apiService.menu.createMenuItem(newItem);
             
             if (response.success) {
-                setMenuItems([...menuItems, response.data]);
                 showNotification('Menu item added successfully', 'success');
                 setShowAddModal(false);
                 
-                // Refresh categories to update counts
-                const categoriesRes = await apiService.menu.getCategories();
-                setCategories(categoriesRes.data || []);
+                // Refresh menu items and categories
+                await fetchCategories();
+                await fetchMenuItems();
             }
         } catch (err) {
             console.error('Failed to add menu item:', err);
@@ -169,16 +177,13 @@ const MenuPage = () => {
             const response = await apiService.menu.updateMenuItem(itemId, updatedItem);
             
             if (response.success) {
-                setMenuItems(menuItems.map(item => 
-                    item.id === itemId ? response.data : item
-                ));
                 showNotification('Menu item updated successfully', 'success');
                 setEditingItem(null);
                 setShowAddModal(false);
                 
-                // Refresh categories to update counts
-                const categoriesRes = await apiService.menu.getCategories();
-                setCategories(categoriesRes.data || []);
+                // Refresh menu items and categories
+                await fetchCategories();
+                await fetchMenuItems();
             }
         } catch (err) {
             console.error('Failed to update menu item:', err);
@@ -198,16 +203,14 @@ const MenuPage = () => {
             const response = await apiService.menu.deleteMenuItem(itemId);
             
             if (response.success) {
-                setMenuItems(menuItems.filter(item => item.id !== itemId));
-                
                 // Remove from cart if exists
                 setCart(cart.filter(item => item.id !== itemId));
                 
                 showNotification('Menu item deleted successfully', 'success');
                 
-                // Refresh categories to update counts
-                const categoriesRes = await apiService.menu.getCategories();
-                setCategories(categoriesRes.data || []);
+                // Refresh menu items and categories
+                await fetchCategories();
+                await fetchMenuItems();
             }
         } catch (err) {
             console.error('Failed to delete menu item:', err);
@@ -224,10 +227,10 @@ const MenuPage = () => {
             const response = await apiService.menu.toggleAvailability(itemId);
             
             if (response.success) {
-                setMenuItems(menuItems.map(item => 
-                    item.id === itemId ? response.data : item
-                ));
                 showNotification(response.message, 'success');
+                
+                // Refresh menu items to get updated availability
+                await fetchMenuItems();
             }
         } catch (err) {
             console.error('Failed to toggle availability:', err);
@@ -329,16 +332,6 @@ const MenuPage = () => {
                 </div>
             )}
 
-            {/* Loading Overlay */}
-            {loading && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-                        <p className="mt-4 text-gray-700">Loading...</p>
-                    </div>
-                </div>
-            )}
-
             {/* Error Message */}
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -368,76 +361,86 @@ const MenuPage = () => {
                 setSearchQuery={setSearchQuery}
             />
 
-            <div className="flex gap-5 flex-col lg:flex-row">
-                {/* Left Side - Menu Content */}
-                <div className="w-full lg:w-3/4">
-                    {/* Category Filter */}
-                    <CategoryFilter
-                        categories={categories}
-                        selectedCategory={selectedCategory}
-                        onCategoryChange={setSelectedCategory}
-                    />
+            {/* Loading State */}
+            {loading && (
+                <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                </div>
+            )}
 
-                    {/* Menu Grid */}
-                    <MenuGrid
-                        items={paginatedItems}
-                        onAddToCart={addToCart}
-                        onEditItem={openEditModal}
-                        onDeleteItem={handleDeleteItem}
-                        onToggleAvailability={handleToggleAvailability}
-                    />
+            {/* Empty State */}
+            {!loading && menuItems.length === 0 && (
+                <div className="text-center py-12">
+                    <i className="fas fa-utensils text-6xl text-gray-300 mb-4"></i>
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">No menu items found</h3>
+                    <p className="text-gray-500 mb-4">
+                        {searchQuery ? 'Try a different search term' : 'Start by adding your first menu item'}
+                    </p>
+                    {!searchQuery && (
+                        <button
+                            onClick={() => {
+                                setEditingItem(null);
+                                setShowAddModal(true);
+                            }}
+                            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
+                        >
+                            <i className="fas fa-plus mr-2"></i>
+                            Add First Item
+                        </button>
+                    )}
+                </div>
+            )}
 
-                    {/* Pagination */}
-                    {filteredItems.length > 0 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                            itemsPerPage={itemsPerPage}
-                            totalItems={filteredItems.length}
-                            onItemsPerPageChange={setItemsPerPage}
+            {/* Menu Display */}
+            {!loading && menuItems.length > 0 && (
+                <div className="flex gap-5 flex-col lg:flex-row">
+                    {/* Left Side - Menu Content */}
+                    <div className="w-full lg:w-3/4">
+                        {/* Category Filter */}
+                        <CategoryFilter
+                            categories={categories}
+                            selectedCategory={selectedCategory}
+                            onCategoryChange={setSelectedCategory}
                         />
-                    )}
 
-                    {/* Empty State */}
-                    {filteredItems.length === 0 && !loading && (
-                        <div className="text-center py-12">
-                            <i className="fas fa-utensils text-6xl text-gray-300 mb-4"></i>
-                            <h3 className="text-xl font-semibold text-gray-600 mb-2">No menu items found</h3>
-                            <p className="text-gray-500 mb-4">
-                                {searchQuery ? 'Try a different search term' : 'Start by adding your first menu item'}
-                            </p>
-                            {!searchQuery && (
-                                <button
-                                    onClick={() => {
-                                        setEditingItem(null);
-                                        setShowAddModal(true);
-                                    }}
-                                    className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
-                                >
-                                    <i className="fas fa-plus mr-2"></i>
-                                    Add First Item
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        {/* Menu Grid */}
+                        <MenuGrid
+                            items={menuItems}
+                            onAddToCart={addToCart}
+                            onEditItem={openEditModal}
+                            onDeleteItem={handleDeleteItem}
+                            onToggleAvailability={handleToggleAvailability}
+                        />
 
-                {/* Right Side - Cart Section */}
-                <div className="w-full lg:w-1/4">
-                    <CartSection
-                        cart={cart}
-                        onRemoveFromCart={removeFromCart}
-                        onUpdateQuantity={updateQuantity}
-                        onClearCart={clearCart}
-                        totalAmount={getTotalAmount()}
-                        totalItems={getTotalItems()}
-                        onProcessPayment={handleProcessPayment}
-                        tableNumber={tableNumber}
-                        onTableNumberChange={setTableNumber}
-                    />
+                        {/* Pagination */}
+                        {totalItems > 0 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={totalItems}
+                                onItemsPerPageChange={setItemsPerPage}
+                            />
+                        )}
+                    </div>
+
+                    {/* Right Side - Cart Section */}
+                    <div className="w-full lg:w-1/4">
+                        <CartSection
+                            cart={cart}
+                            onRemoveFromCart={removeFromCart}
+                            onUpdateQuantity={updateQuantity}
+                            onClearCart={clearCart}
+                            totalAmount={getTotalAmount()}
+                            totalItems={getTotalItems()}
+                            onProcessPayment={handleProcessPayment}
+                            tableNumber={tableNumber}
+                            onTableNumberChange={setTableNumber}
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Add/Edit Item Modal */}
             <AddMenuItemModal 

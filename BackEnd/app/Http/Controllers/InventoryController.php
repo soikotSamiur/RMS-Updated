@@ -14,22 +14,38 @@ class InventoryController extends Controller
      */
     public function index(Request $request)
     {
+        // Get pagination parameters
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 15);
+        $category = $request->input('category', 'all');
+        $status = $request->input('status', 'all');
+        $search = $request->input('search', '');
+
+        // Build query
         $query = InventoryItem::query();
 
         // Apply filters
-        if ($request->has('category') && $request->category !== 'all') {
-            $query->where('category', $request->category);
+        if ($category !== 'all') {
+            $query->where('category', $category);
         }
 
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
 
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+        if (!empty($search)) {
+            $query->where('name', 'like', '%' . $search . '%');
         }
 
-        $items = $query->orderBy('name')->get();
+        // Get total count before pagination
+        $total = $query->count();
+
+        // Apply pagination and ordering
+        $items = $query
+            ->orderBy('name')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -48,7 +64,13 @@ class InventoryController extends Controller
                     'createdAt' => $item->created_at->toISOString(),
                     'updatedAt' => $item->updated_at->toISOString()
                 ];
-            })
+            }),
+            'pagination' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'total_pages' => ceil($total / $perPage)
+            ]
         ]);
     }
 

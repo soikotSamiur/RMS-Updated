@@ -4,8 +4,11 @@ import API from './axios';
 // Order API
 const orderService = {
   // Get all orders
-  getOrders: async () => {
-    const res = await API.get('/orders');
+  getOrders: async (params = {}) => {
+    const { page = 1, per_page = 15, status = 'all' } = params;
+    const res = await API.get('/orders', {
+      params: { page, per_page, status }
+    });
     return res.data;
   },
 

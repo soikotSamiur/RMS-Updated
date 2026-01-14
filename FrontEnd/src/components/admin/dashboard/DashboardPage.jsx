@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import apiService from '../../../services/apiService';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorDisplay from './ErrorDisplay';
 import DashboardHeader from './DashboardHeader';
 import StatsCards from './StatsCards';
+import StatsCardsSkeleton from './StatsCardsSkeleton';
 import RevenueChart from './RevenueChart';
 import CategoryDistributionChart from './CategoryDistributionChart';
+import ChartsSkeleton from './ChartsSkeleton';
 import TopSellingProducts from './TopSellingProducts';
+import ProductsSkeleton from './ProductsSkeleton';
 import LowStockAlerts from './LowStockAlerts';
+import AlertsSkeleton from './AlertsSkeleton';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -15,7 +17,13 @@ const DashboardPage = () => {
   const [categoryDistribution, setCategoryDistribution] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
   const [topSellingProducts, setTopSellingProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Individual loading states for progressive loading
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingCharts, setLoadingCharts] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -23,28 +31,55 @@ const DashboardPage = () => {
   }, []);
 
   const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [statsRes, trendsRes, categoryRes, lowStockRes, topSellingRes] = await Promise.all([
-        apiService.dashboard.getDashboardStats(),
-        apiService.dashboard.getDailyTrends(),
-        apiService.dashboard.getCategoryDistribution(),
-        apiService.inventory.getLowStockItems(),
-        apiService.dashboard.getTopSellingProducts()
-      ]);
-      
-      setStats(statsRes.data);
-      setDailyTrends(trendsRes.data);
-      setCategoryDistribution(categoryRes.data);
-      setLowStockItems(lowStockRes.data || []);
-      setTopSellingProducts(topSellingRes.data || []);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
+    setError(null);
+    
+    // Load stats first (most important - shows immediately)
+    apiService.dashboard.getDashboardStats()
+      .then(res => {
+        setStats(res.data);
+        setLoadingStats(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch stats:', err);
+        setLoadingStats(false);
+      });
+    
+    // Load charts independently (parallel but don't block stats)
+    Promise.all([
+      apiService.dashboard.getDailyTrends(),
+      apiService.dashboard.getCategoryDistribution()
+    ])
+      .then(([trendsRes, categoryRes]) => {
+        setDailyTrends(trendsRes.data);
+        setCategoryDistribution(categoryRes.data);
+        setLoadingCharts(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch charts:', err);
+        setLoadingCharts(false);
+      });
+    
+    // Load top selling products independently
+    apiService.dashboard.getTopSellingProducts()
+      .then(res => {
+        setTopSellingProducts(res.data || []);
+        setLoadingProducts(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch top products:', err);
+        setLoadingProducts(false);
+      });
+    
+    // Load low stock alerts independently
+    apiService.inventory.getLowStockItems()
+      .then(res => {
+        setLowStockItems(res.data || []);
+        setLoadingAlerts(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch low stock items:', err);
+        setLoadingAlerts(false);
+      });
   };
 
   const handleReorder = (itemId) => {
@@ -54,28 +89,26 @@ const DashboardPage = () => {
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} onRetry={fetchDashboardData} />;
-  }
-
   return (
     <div className="p-4 md:p-1">
       <DashboardHeader />
       
-      <StatsCards stats={stats} />
+      {loadingStats ? <StatsCardsSkeleton /> : <StatsCards stats={stats} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <RevenueChart dailyTrends={dailyTrends} />
-        <CategoryDistributionChart categoryDistribution={categoryDistribution} />
+        {loadingCharts ? (
+          <ChartsSkeleton />
+        ) : (
+          <>
+            <RevenueChart dailyTrends={dailyTrends} />
+            <CategoryDistributionChart categoryDistribution={categoryDistribution} />
+          </>
+        )}
       </div>
 
-      <TopSellingProducts topSellingProducts={topSellingProducts} />
+      {loadingProducts ? <ProductsSkeleton /> : <TopSellingProducts topSellingProducts={topSellingProducts} />}
 
-      <LowStockAlerts lowStockItems={lowStockItems} handleReorder={handleReorder} />
+      {loadingAlerts ? <AlertsSkeleton /> : <LowStockAlerts lowStockItems={lowStockItems} handleReorder={handleReorder} />}
     </div>
   );
 };

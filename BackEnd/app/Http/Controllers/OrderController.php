@@ -12,9 +12,39 @@ use Illuminate\Support\Facades\DB;
 class OrderController extends Controller
 {
     // Get all orders
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with('orderItems')->orderBy('created_at', 'desc')->get();
+        // Get pagination parameters
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 15);
+        $status = $request->input('status', 'all');
+
+        // Build query
+        $query = Order::with('orderItems');
+
+        // Filter by status
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        // Get total count before pagination
+        $total = $query->count();
+
+        // Get status counts for all orders (not just filtered)
+        $statusCounts = [
+            'completed' => Order::where('status', 'completed')->count(),
+            'pending' => Order::where('status', 'pending')->count(),
+            'preparing' => Order::where('status', 'preparing')->count(),
+            'ready' => Order::where('status', 'ready')->count(),
+            'cancelled' => Order::where('status', 'cancelled')->count(),
+        ];
+
+        // Apply pagination and ordering
+        $orders = $query
+            ->orderBy('created_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
         
         $ordersArray = $orders->map(function($order) {
             return [
@@ -45,7 +75,14 @@ class OrderController extends Controller
         
         return response()->json([
             'success' => true,
-            'data' => $ordersArray
+            'data' => $ordersArray,
+            'pagination' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'total_pages' => ceil($total / $perPage)
+            ],
+            'status_counts' => $statusCounts
         ]);
     }
     

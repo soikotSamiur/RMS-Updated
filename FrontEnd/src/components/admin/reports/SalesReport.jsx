@@ -184,7 +184,7 @@ const SalesReport = ({ data, filters }) => {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Total Price & Revenue Trend Analysis</h3>
         
-        {/* Line Chart */}
+        {/* Bar Chart */}
         <div className="relative h-64 p-4 bg-gray-50 rounded-lg mb-4">
           {/* Y-axis labels */}
           <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
@@ -208,71 +208,43 @@ const SalesReport = ({ data, filters }) => {
               ))}
             </div>
 
-            {/* Line chart */}
-            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-              {/* Define gradient */}
-              <defs>
-                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="rgb(249, 115, 22)" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="rgb(249, 115, 22)" stopOpacity="0.05" />
-                </linearGradient>
-              </defs>
-
-              {/* Area under the line */}
-              <polygon
-                fill="url(#lineGradient)"
-                points={sortedData.map((day, index) => {
-                  const maxRevenue = Math.max(...sortedData.map(d => d.totalPrice));
-                  const minRevenue = Math.min(...sortedData.map(d => d.totalPrice));
-                  const x = (index / (sortedData.length - 1)) * 100;
-                  const y = 100 - (((day.totalPrice - minRevenue) / (maxRevenue - minRevenue)) * 90 + 5);
-                  return `${x},${y}`;
-                }).join(' ') + ` 100,100 0,100`}
-                vectorEffect="non-scaling-stroke"
-              />
-
-              {/* Main line */}
-              <polyline
-                fill="none"
-                stroke="rgb(249, 115, 22)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={sortedData.map((day, index) => {
-                  const maxRevenue = Math.max(...sortedData.map(d => d.totalPrice));
-                  const minRevenue = Math.min(...sortedData.map(d => d.totalPrice));
-                  const x = (index / (sortedData.length - 1)) * 100;
-                  const y = 100 - (((day.totalPrice - minRevenue) / (maxRevenue - minRevenue)) * 90 + 5);
-                  return `${x},${y}`;
-                }).join(' ')}
-                vectorEffect="non-scaling-stroke"
-              />
-
-              {/* Data points */}
-              {sortedData.map((day, index) => {
+            {/* Bar chart */}
+            <div className="absolute inset-0 flex items-end justify-between gap-1 pb-8">
+              {sortedData.map((day) => {
                 const maxRevenue = Math.max(...sortedData.map(d => d.totalPrice));
-                const minRevenue = Math.min(...sortedData.map(d => d.totalPrice));
-                const x = (index / (sortedData.length - 1)) * 100;
-                const y = 100 - (((day.totalPrice - minRevenue) / (maxRevenue - minRevenue)) * 90 + 5);
+                const heightPercentage = (day.totalPrice / maxRevenue) * 100;
                 
                 const isBestDay = day.date === topDay.date;
                 const isWorstDay = day.date === worstDay.date;
+                
+                let barColor = 'bg-orange-500';
+                if (isBestDay) barColor = 'bg-green-500';
+                else if (isWorstDay) barColor = 'bg-red-500';
 
                 return (
-                  <g key={day.date}>
-                    <circle
-                      cx={`${x}%`}
-                      cy={`${y}%`}
-                      r="5"
-                      fill={isBestDay ? 'rgb(34, 197, 94)' : isWorstDay ? 'rgb(239, 68, 68)' : 'rgb(249, 115, 22)'}
-                      stroke="white"
-                      strokeWidth="2"
-                      className="hover:r-8 transition-all cursor-pointer"
-                    />
-                  </g>
+                  <div 
+                    key={day.date} 
+                    className="flex-1 relative group cursor-pointer"
+                  >
+                    <div 
+                      className={`${barColor} rounded-t transition-all duration-300 hover:opacity-80`}
+                      style={{ height: `${heightPercentage}%` }}
+                    >
+                    </div>
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-2 px-3 whitespace-nowrap z-10">
+                      <div className="font-semibold">{day.date}</div>
+                      <div>Total Price: ৳{day.totalPrice.toLocaleString()}</div>
+                      <div>Revenue (40%): ৳{day.revenue.toLocaleString()}</div>
+                      <div>Orders: {day.orders}</div>
+                      {isBestDay && <div className="text-green-400">👑 Best Day</div>}
+                      {isWorstDay && <div className="text-red-400">⚠️ Needs Attention</div>}
+                    </div>
+                  </div>
                 );
               })}
-            </svg>
+            </div>
 
             {/* X-axis labels */}
             <div className="absolute -bottom-8 left-0 right-0 flex justify-between text-xs text-gray-600">
@@ -292,50 +264,21 @@ const SalesReport = ({ data, filters }) => {
                 );
               })}
             </div>
-
-            {/* Hover tooltips */}
-            {sortedData.map((day, index) => {
-              const maxRevenue = Math.max(...sortedData.map(d => d.totalPrice));
-              const minRevenue = Math.min(...sortedData.map(d => d.totalPrice));
-              const x = (index / (sortedData.length - 1)) * 100;
-              const y = 100 - (((day.totalPrice - minRevenue) / (maxRevenue - minRevenue)) * 90 + 5);
-              
-              const isBestDay = day.date === topDay.date;
-              const isWorstDay = day.date === worstDay.date;
-
-              return (
-                <div
-                  key={`tooltip-${day.date}`}
-                  className="absolute group"
-                  style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-                >
-                  <div className="w-3 h-3 cursor-pointer"></div>
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-2 px-3 whitespace-nowrap z-10">
-                    <div className="font-semibold">{day.date}</div>
-                    <div>Total Price: ৳{day.totalPrice.toLocaleString()}</div>
-                    <div>Revenue (40%): ৳{day.revenue.toLocaleString()}</div>
-                    <div>Orders: {day.orders}</div>
-                    {isBestDay && <div className="text-green-400">👑 Best Day</div>}
-                    {isWorstDay && <div className="text-red-400">⚠️ Needs Attention</div>}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
 
         {/* Chart Legend */}
         <div className="flex flex-wrap gap-4 text-xs">
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
             <span className="text-gray-600">Best Performance</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+            <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
             <span className="text-gray-600">Regular Performance</span>
           </div>
           <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+            <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
             <span className="text-gray-600">Needs Attention</span>
           </div>
         </div>
