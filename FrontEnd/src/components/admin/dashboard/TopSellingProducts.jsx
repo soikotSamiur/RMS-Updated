@@ -1,5 +1,5 @@
-const TopSellingProducts = ({ topSellingProducts }) => {
-  if (topSellingProducts.length === 0) return null;
+const TopSellingProducts = ({ topSellingProducts = [] }) => {
+  if (!topSellingProducts || topSellingProducts.length === 0) return null;
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">

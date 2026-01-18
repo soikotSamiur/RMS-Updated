@@ -116,8 +116,7 @@ const SalesReport = ({ data, filters }) => {
               <th className="px-4 py-3 font-semibold text-gray-700">Revenue (40%)</th>
               <th className="px-4 py-3 font-semibold text-gray-700">Orders</th>
               <th className="px-4 py-3 font-semibold text-gray-700">Avg Order</th>
-              {/* <th className="px-4 py-3 font-semibold text-gray-700">Daily Trend</th> */}
-              <th className="px-4 py-3 font-semibold text-gray-700">Performance</th>
+              {/* <th className="px-4 py-3 font-semibold text-gray-700">Performance</th> */}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -146,33 +145,6 @@ const SalesReport = ({ data, filters }) => {
                   <td className="px-4 py-3 font-semibold text-green-700">৳{day.revenue.toLocaleString()}</td>
                   <td className="px-4 py-3 text-purple-700">{day.orders}</td>
                   <td className="px-4 py-3 text-orange-700">৳{day.averageOrder.toFixed(2)}</td>
-                  {/* <td className="px-4 py-3 text-black">
-                    {previousDay && (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        revenueChange > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : revenueChange < 0 
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        <i className={`fas ${
-                          revenueChange > 0 ? 'fa-arrow-up' : 
-                          revenueChange < 0 ? 'fa-arrow-down' : 'fa-minus'
-                        } mr-1`}></i>
-                        {revenueChange !== 0 ? Math.abs(revenueChange).toFixed(1) + '%' : '0%'}
-                      </span>
-                    )}
-                  </td> */}
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-medium ${performanceColor}`}>
-                      {isBestDay && <i className="fas fa-crown mr-1"></i>}
-                      {isWorstDay && <i className="fas fa-exclamation-triangle mr-1"></i>}
-                      {isBestDay ? 'Best Day' : 
-                       isWorstDay ? 'Needs Attention' : 
-                       day.revenue > averageOrderValue * 15 ? 'Great' : 
-                       day.revenue > averageOrderValue * 10 ? 'Good' : 'Average'}
-                    </span>
-                  </td>
                 </tr>
               );
             })}

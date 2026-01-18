@@ -1,4 +1,4 @@
-const RevenueChart = ({ dailyTrends }) => {
+const RevenueChart = ({ dailyTrends = [] }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -7,7 +7,7 @@ const RevenueChart = ({ dailyTrends }) => {
       </h2>
       <p className="text-sm text-gray-600 mb-4">Last 12 months performance</p>
       <div className="h-64 flex items-end justify-between space-x-2">
-        {dailyTrends.length > 0 ? (
+        {dailyTrends && dailyTrends.length > 0 ? (
           dailyTrends.map((data, index) => {
             const maxRevenue = Math.max(...dailyTrends.map(d => d.revenue));
             const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
@@ -17,7 +17,7 @@ const RevenueChart = ({ dailyTrends }) => {
                 <div className="relative w-full">
                   <div 
                     className="bg-orange-500 rounded-t hover:bg-orange-600 transition-colors cursor-pointer"
-                    style={{ height: `${height * 2}px`, minHeight: '8px' }}
+                    style={{ height: `${height * 2}px`, minHeight: '2px' }}
                   >
                     <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                       ৳{data.revenue.toLocaleString()}

@@ -9,7 +9,7 @@ const StatsCards = ({ stats }) => {
             <div className="text-2xl font-bold text-green-800">৳{stats?.totalRevenue?.value?.toLocaleString() || '0'}</div>
           </div>
           <div className="text-green-600">
-            <i className="fas fa-dollar-sign text-xl"></i>
+            <i class="fa-solid fa-bangladeshi-taka-sign"></i>
           </div>
         </div>
       </div>

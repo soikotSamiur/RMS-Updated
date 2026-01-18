@@ -18,6 +18,7 @@ import MenuPage from '../components/admin/menu/MenuPage';
 import OrdersPage from '../components/admin/orders/OrdersPage';
 import InventoryPage from '../components/admin/inventory/InventoryPage';
 import ReportsPage from '../components/admin/reports/ReportsPage';
+import BillsPage from '../components/admin/bills/BillsPage';
 import SettingsPage from '../components/admin/settings/SettingsPage';
 
 // User Layout & Pages
@@ -90,6 +91,15 @@ const AppRouter = () => {
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/bills"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <BillsPage />
                 </ProtectedRoute>
               }
             />

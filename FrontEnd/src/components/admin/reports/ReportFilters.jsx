@@ -72,10 +72,12 @@ const ReportFilters = ({ filters, onFilterChange }) => {
         <div className="flex items-end">
           <button
             onClick={() => {
-              // Reset to default filters
+              // Reset to default filters - use local date to avoid timezone issues
+              const now = new Date();
+              const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
               onFilterChange({
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: new Date().toISOString().split('T')[0],
+                startDate: localDate,
+                endDate: localDate,
                 category: 'all',
                 reportType: 'daily'
               });

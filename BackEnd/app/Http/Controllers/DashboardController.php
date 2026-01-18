@@ -13,13 +13,9 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Get Dashboard Statistics
-     */
     public function getDashboardStats()
     {
-        // Cache for 5 minutes to improve performance
-        return Cache::remember('dashboard_stats', 300, function () {
+        $data = Cache::remember('dashboard_stats', 300, function () {
             // Get current month data
             $currentMonthStart = Carbon::now()->startOfMonth();
             $currentMonthEnd = Carbon::now()->endOfMonth();
@@ -75,9 +71,7 @@ class DashboardController extends Controller
                 ? (($avgOrderValue - $lastMonthAvg) / $lastMonthAvg) * 100 
                 : 0;
         
-        return response()->json([
-            'success' => true,
-            'data' => [
+            return [
                 'totalRevenue' => [
                     'value' => round((float) $totalRevenue, 2),
                     'change' => round($revenueChange, 1),
@@ -93,23 +87,22 @@ class DashboardController extends Controller
                     'change' => round($avgChange, 1),
                     'period' => 'Per order'
                 ]
-            ]
-        ]);
+            ];
         });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
     }
     
-    /**
-     * Get Daily Revenue & Profit Trends
-     */
+    // Get Daily Revenue & Profit Trends
     public function getDailyTrends()
     {
-        // Cache for 5 minutes
-        return Cache::remember('dashboard_daily_trends', 300, function () {
-            // Get data for the last 12 months
+    
+        $data = Cache::remember('dashboard_daily_trends', 300, function () {
             $startDate = Carbon::now()->subMonths(11)->startOfMonth();
             $endDate = Carbon::now()->endOfMonth();
-        
-        // Optimize: Use raw SQL with proper grouping
         $monthlyData = Order::whereBetween('created_at', [$startDate, $endDate])
             ->where('status', '!=', 'cancelled')
             ->selectRaw('
@@ -124,8 +117,6 @@ class DashboardController extends Controller
             ->keyBy(function($item) {
                 return $item->year . '-' . $item->month;
             });
-        
-        // Format data for chart
         $formattedData = [];
         $currentDate = $startDate->copy();
         
@@ -141,21 +132,20 @@ class DashboardController extends Controller
             $currentDate->addMonth();
         }
         
+            return $formattedData;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $formattedData
+            'data' => $data
         ]);
-        });
     }
     
-    /**
-     * Get Sales Distribution by Category
-     */
+    // Get Sales Distribution by Category
+     
     public function getCategoryDistribution()
     {
-        // Cache for 5 minutes
-        return Cache::remember('dashboard_category_distribution', 300, function () {
-            // Map categories to proper names
+        $data = Cache::remember('dashboard_category_distribution', 300, function () {
         $categoryMap = [
             'appetizers' => 'Appetizers',
             'main-courses' => 'Main Courses',
@@ -165,8 +155,6 @@ class DashboardController extends Controller
             'sides' => 'Sides',
             'salads' => 'Salads'
         ];
-        
-        // Optimize: Calculate revenue directly in SQL
         $categoryData = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', '!=', 'cancelled')
@@ -187,21 +175,20 @@ class DashboardController extends Controller
                 ];
             });
         
+            return $categoryData;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $categoryData
+            'data' => $data
         ]);
-        });
     }
 
-    /**
-     * Get Top 5 Selling Products
-     */
+    // Get Top 5 Selling Products
     public function getTopSellingProducts()
     {
-        // Cache for 5 minutes
-        return Cache::remember('dashboard_top_selling', 300, function () {
-        // Map categories to proper names
+        
+        $data = Cache::remember('dashboard_top_selling', 300, function () {
         $categoryMap = [
             'appetizers' => 'Appetizers',
             'main-courses' => 'Main Courses',
@@ -243,10 +230,12 @@ class DashboardController extends Controller
                 ];
             });
 
+            return $topProducts;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $topProducts
+            'data' => $data
         ]);
-        });
     }
 }

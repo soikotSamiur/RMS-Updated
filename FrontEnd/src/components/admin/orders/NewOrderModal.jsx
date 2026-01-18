@@ -24,15 +24,24 @@ const NewOrderModal = ({ isOpen, onClose, onOrderCreated, onOrderUpdated, editin
     if (editingOrder && isOpen) {
       setOrderType(editingOrder.type);
       setFormData({
-        customerName: editingOrder.customerName || '',
+        customerName: editingOrder.customer_name || editingOrder.customerName || '',
         phone: editingOrder.phone || '',
         email: editingOrder.email || '',
-        tableNumber: editingOrder.tableNumber || '',
+        tableNumber: editingOrder.table_number || editingOrder.tableNumber || '',
         guests: editingOrder.guests || '',
         address: editingOrder.address || '',
-        specialInstructions: editingOrder.specialInstructions || ''
+        specialInstructions: editingOrder.special_instructions || editingOrder.specialInstructions || ''
       });
-      setSelectedItems(editingOrder.items || []);
+      
+      // Handle items from backend format
+      const items = editingOrder.items || editingOrder.order_items || [];
+      const formattedItems = items.map(item => ({
+        id: item.menu_item_id || item.id,
+        name: item.name || item.menu_item?.name || 'Item',
+        price: parseFloat(item.price),
+        quantity: parseInt(item.quantity)
+      }));
+      setSelectedItems(formattedItems);
     } else if (!editingOrder && isOpen) {
       resetForm();
     }

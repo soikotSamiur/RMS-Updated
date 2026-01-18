@@ -8,6 +8,7 @@ use App\Models\MenuItem;
 use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller
 {
@@ -204,6 +205,12 @@ class OrderController extends Controller
             
             DB::commit();
             
+            // Clear dashboard cache so stats update immediately
+            Cache::forget('dashboard_stats');
+            Cache::forget('dashboard_daily_trends');
+            Cache::forget('dashboard_category_distribution');
+            Cache::forget('dashboard_top_selling');
+            
             // Load order items for response
             $order->load('orderItems');
             
@@ -258,7 +265,6 @@ class OrderController extends Controller
             'address' => 'nullable|string',
             'specialInstructions' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.id' => 'required|integer',
             'items.*.name' => 'required|string',
             'items.*.price' => 'required|numeric',
             'items.*.quantity' => 'required|integer|min:1',
@@ -290,7 +296,7 @@ class OrderController extends Controller
             foreach ($request->items as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'menu_item_id' => $item['id'],
+                    'menu_item_id' => isset($item['menu_item_id']) ? $item['menu_item_id'] : (isset($item['id']) ? $item['id'] : null),
                     'name' => $item['name'],
                     'price' => $item['price'],
                     'quantity' => $item['quantity']
@@ -401,6 +407,12 @@ class OrderController extends Controller
             $order->save();
             
             DB::commit();
+            
+            // Clear dashboard cache so stats update immediately
+            Cache::forget('dashboard_stats');
+            Cache::forget('dashboard_daily_trends');
+            Cache::forget('dashboard_category_distribution');
+            Cache::forget('dashboard_top_selling');
         
             $order->load('orderItems');
             

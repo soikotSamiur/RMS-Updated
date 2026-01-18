@@ -9,6 +9,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BillController;
 
 // API Routes
 
@@ -83,6 +84,15 @@ Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
     Route::get('/reports/inventory', [ReportController::class, 'getInventoryReport']);
     Route::get('/reports/financial', [ReportController::class, 'getFinancialReport']);
     Route::get('/reports/stats', [ReportController::class, 'getReportStats']);
+});
+
+// Bills Routes - Only Admin can access
+Route::middleware(['auth:sanctum', 'role:Admin'])->group(function () {
+    Route::get('/bills', [BillController::class, 'index']);
+    Route::post('/bills', [BillController::class, 'store']);
+    Route::get('/bills/stats', [BillController::class, 'getStats']);
+    Route::get('/bills/{id}', [BillController::class, 'show']);
+    Route::delete('/bills/{id}', [BillController::class, 'destroy']);
 });
 
 // Settings Routes - Only Admin can access

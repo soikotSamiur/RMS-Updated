@@ -100,26 +100,7 @@ const SettingsPage = () => {
           >
             General Settings
           </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 font-semibold transition-colors ${
-              activeTab === 'users'
-                ? 'border-b-2 border-orange-500 text-orange-500'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            User Management
-          </button>
-          <button
-            onClick={() => setActiveTab('payment')}
-            className={`px-6 py-3 font-semibold transition-colors ${
-              activeTab === 'payment'
-                ? 'border-b-2 border-orange-500 text-orange-500'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Payment Settings
-          </button>
+    
         </div>
 
         {/* Tab Content */}
@@ -201,74 +182,6 @@ const SettingsPage = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Timezone
-                      </label>
-                      <select
-                        value={settings.timezone || 'UTC+6'}
-                        onChange={(e) => handleInputChange('timezone', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="UTC-12">UTC-12</option>
-                        <option value="UTC-11">UTC-11</option>
-                        <option value="UTC-10">UTC-10</option>
-                        <option value="UTC-9">UTC-9</option>
-                        <option value="UTC-8">UTC-8</option>
-                        <option value="UTC-7">UTC-7</option>
-                        <option value="UTC-6">UTC-6</option>
-                        <option value="UTC-5">UTC-5</option>
-                        <option value="UTC-4">UTC-4</option>
-                        <option value="UTC-3">UTC-3</option>
-                        <option value="UTC-2">UTC-2</option>
-                        <option value="UTC-1">UTC-1</option>
-                        <option value="UTC">UTC</option>
-                        <option value="UTC+1">UTC+1</option>
-                        <option value="UTC+2">UTC+2</option>
-                        <option value="UTC+3">UTC+3</option>
-                        <option value="UTC+4">UTC+4</option>
-                        <option value="UTC+5">UTC+5</option>
-                        <option value="UTC+6">UTC+6 (Bangladesh)</option>
-                        <option value="UTC+7">UTC+7</option>
-                        <option value="UTC+8">UTC+8</option>
-                        <option value="UTC+9">UTC+9</option>
-                        <option value="UTC+10">UTC+10</option>
-                        <option value="UTC+11">UTC+11</option>
-                        <option value="UTC+12">UTC+12</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Currency
-                      </label>
-                      <select
-                        value={settings.currency || 'BDT'}
-                        onChange={(e) => handleInputChange('currency', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="BDT">BDT (৳)</option>
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="INR">INR (₹)</option>
-                        <option value="JPY">JPY (¥)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Theme
-                      </label>
-                      <select
-                        value={settings.theme || 'light'}
-                        onChange={(e) => handleInputChange('theme', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
               )}
 

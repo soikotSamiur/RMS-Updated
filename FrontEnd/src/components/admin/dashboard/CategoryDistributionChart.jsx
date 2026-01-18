@@ -1,4 +1,4 @@
-const CategoryDistributionChart = ({ categoryDistribution }) => {
+const CategoryDistributionChart = ({ categoryDistribution = [] }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -7,7 +7,7 @@ const CategoryDistributionChart = ({ categoryDistribution }) => {
       </h2>
       <p className="text-sm text-gray-600 mb-4">By category</p>
       <div className="flex items-center justify-center h-64">
-        {categoryDistribution.length > 0 ? (
+        {categoryDistribution && categoryDistribution.length > 0 ? (
           <div className="relative">
             <svg width="250" height="250" viewBox="0 0 250 250">
               {(() => {
@@ -31,8 +31,8 @@ const CategoryDistributionChart = ({ categoryDistribution }) => {
                     <path
                       key={index}
                       d={`M 125 125 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                      fill={colors[index % colors.length]}
-                      className="hover:opacity-80 transition-opacity cursor-pointer"
+                      fill={colors[index ]}
+                      className="hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <title>{item.category}: ৳{item.value.toLocaleString()} ({percentage.toFixed(1)}%)</title>
                     </path>
@@ -47,7 +47,7 @@ const CategoryDistributionChart = ({ categoryDistribution }) => {
       </div>
       
       {/* Legend */}
-      {categoryDistribution.length > 0 && (
+      {categoryDistribution && categoryDistribution.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-3 justify-center">
           {categoryDistribution.map((item, index) => {
             const colors = ['#EF4444', '#3B82F6', '#A855F7', '#F97316', '#10B981'];

@@ -8,6 +8,7 @@ import AddMenuItemModal from './AddMenuItemModal';
 import BillReceipt from './BillReceipt';
 import Pagination from '../../common/Pagination';
 import apiService from '../../../services/apiService';
+import billService from '../../../services/billService';
 
 const MenuPage = () => {
     const [categories, setCategories] = useState([]);
@@ -24,6 +25,7 @@ const MenuPage = () => {
     const [currentOrder, setCurrentOrder] 
     = useState(null);
     const [tableNumber, setTableNumber] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [totalItems, setTotalItems] = useState(0);
@@ -280,6 +282,9 @@ const MenuPage = () => {
             const response = await apiService.orders.createOrder(orderData);
             
             if (response.success) {
+                // Generate bill for the order
+                await generateBillForOrder(response.data.id, subtotal, tax, total);
+
                 // Set current order for receipt
                 setCurrentOrder({
                     id: response.data.id,
@@ -304,11 +309,42 @@ const MenuPage = () => {
         }
     };
 
+    // Generate bill for order
+    const generateBillForOrder = async (orderId, subtotal, tax, total) => {
+        try {
+            const billData = {
+                order_id: orderId,
+                customer_name: 'Walk-in Customer',
+                phone: '',
+                email: '',
+                order_type: 'Dine-in',
+                table_number: tableNumber ? parseInt(tableNumber) : null,
+                subtotal: subtotal,
+                tax: tax,
+                discount: 0,
+                total: total,
+                payment_method: paymentMethod || 'Cash',
+                items: cart.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            };
+
+            await billService.createBill(billData);
+            console.log('Bill generated successfully for order:', orderId);
+        } catch (err) {
+            console.error('Failed to generate bill:', err);
+            // Don't show error to user as this is a background operation
+        }
+    };
+
     // Close receipt and clear cart
     const handleCloseReceipt = () => {
         setShowReceipt(false);
         setCurrentOrder(null);
         setTableNumber('');
+        setPaymentMethod('');
         clearCart();
     };
 
@@ -437,6 +473,8 @@ const MenuPage = () => {
                             onProcessPayment={handleProcessPayment}
                             tableNumber={tableNumber}
                             onTableNumberChange={setTableNumber}
+                            paymentMethod={paymentMethod}
+                            onPaymentMethodChange={setPaymentMethod}
                         />
                     </div>
                 </div>

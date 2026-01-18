@@ -51,12 +51,12 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
           <div>
             <h3 className="font-bold text-lg text-black">Order #{order.id}</h3>
             <p className="text-gray-600 text-sm">
-              {order.type === 'dine-in' ? `Table #${order.tableNumber} • ${order.guests} guests` : 
-               `Takeaway • ${order.customerName}`}
+              {order.type === 'dine-in' ? `Table #${order.table_number || order.tableNumber} • ${order.guests || 0} guests` : 
+               `Takeaway • ${order.customer_name || order.customerName}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {(currentRole === 'Admin' || currentRole === 'Cashier') && order.status === 'pending' && (
+            {(currentRole === 'Admin' || currentRole === 'Cashier' || currentRole === 'Waiter' || currentRole === 'Employee') && order.status === 'pending' && (
               <button
                 onClick={() => onEditOrder(order)}
                 className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -73,9 +73,9 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
 
         {/* Order Items */}
         <div className="space-y-2 mb-4">
-          {order.items.map((item, index) => (
+          {(order.items || order.order_items || []).map((item, index) => (
             <div key={index} className="flex justify-between text-sm">
-              <span className=" text-black">{item.quantity}x {item.name}</span>
+              <span className=" text-black">{item.quantity}x {item.name || item.menu_item?.name || 'Item'}</span>
               <span className=" text-black">{(item.price * item.quantity).toFixed(2)} <i className="fa-solid fa-bangladeshi-taka-sign"></i></span>
             </div>
           ))}
@@ -127,8 +127,8 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
                   if (currentRole === 'Chef') return ['preparing', 'ready', 'completed', 'pending'].includes(order.status);
                   // Waiters can accept pending orders
                   if (currentRole === 'Waiter') return order.status === 'pending' || order.status === 'ready';
-                  // Cashiers and Admins see all actions
-                  return currentRole === 'Admin' || currentRole === 'Cashier' || !currentRole;
+                  // Cashiers, Admins, and Employees see all actions
+                  return currentRole === 'Admin' || currentRole === 'Cashier' || currentRole === 'Employee' || !currentRole;
                 })
                 .map((action, index) => (
                   <button

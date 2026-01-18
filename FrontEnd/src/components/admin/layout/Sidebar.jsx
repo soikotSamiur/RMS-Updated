@@ -14,6 +14,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
         { id: 'orders', label: 'Orders', icon: 'fas fa-shopping-basket', path: '/admin/orders', allowedRoles: ['Admin','Waiter','Chef','Cashier'] },
         { id: 'inventory', label: 'Inventory', icon: 'fas fa-boxes', path: '/admin/inventory', allowedRoles: ['Admin'] },
         { id: 'reports', label: 'Reports', icon: 'fas fa-chart-bar', path: '/admin/reports', allowedRoles: ['Admin'] },
+        { id: 'bills', label: 'Bills', icon: 'fas fa-file-invoice', path: '/admin/bills', allowedRoles: ['Admin'] },
         { id: 'settings', label: 'Settings', icon: 'fas fa-cog', path: '/admin/settings', allowedRoles: ['Admin'] },
     ];
 

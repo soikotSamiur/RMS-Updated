@@ -37,4 +37,10 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    // Relationship: An order has one bill
+    public function bill()
+    {
+        return $this->hasOne(Bill::class);
+    }
 }

@@ -5,11 +5,19 @@ import ReportFilters from './ReportFilters';
 import ReportStats from './ReportStats';
 import apiService from '../../../services/apiService';
 
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const ReportsPage = () => {
   const [activeReport, setActiveReport] = useState('sales');
   const [filters, setFilters] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: getLocalDateString(),
+    endDate: getLocalDateString(),
     category: 'all',
     reportType: 'daily'
   });
@@ -121,18 +129,7 @@ const ReportsPage = () => {
             >
               <i className={`fas fa-sync ${isLoading ? 'animate-spin' : ''}`}></i> Refresh
             </button>
-            <button 
-              onClick={exportReport}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <i className="fas fa-download"></i> Export
-            </button>
-            <button 
-              onClick={printReport}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <i className="fas fa-print"></i> Print
-            </button>
+           
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import apiService from '../../../services/apiService';
 import DashboardHeader from './DashboardHeader';
 import StatsCards from './StatsCards';
@@ -17,23 +17,14 @@ const DashboardPage = () => {
   const [categoryDistribution, setCategoryDistribution] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
   const [topSellingProducts, setTopSellingProducts] = useState([]);
-  
-  // Individual loading states for progressive loading
+
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingCharts, setLoadingCharts] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    setError(null);
-    
-    // Load stats first (most important - shows immediately)
+  const fetchDashboardData = useCallback(async () => {
+        
     apiService.dashboard.getDashboardStats()
       .then(res => {
         setStats(res.data);
@@ -44,7 +35,6 @@ const DashboardPage = () => {
         setLoadingStats(false);
       });
     
-    // Load charts independently (parallel but don't block stats)
     Promise.all([
       apiService.dashboard.getDailyTrends(),
       apiService.dashboard.getCategoryDistribution()
@@ -59,7 +49,6 @@ const DashboardPage = () => {
         setLoadingCharts(false);
       });
     
-    // Load top selling products independently
     apiService.dashboard.getTopSellingProducts()
       .then(res => {
         setTopSellingProducts(res.data || []);
@@ -70,7 +59,6 @@ const DashboardPage = () => {
         setLoadingProducts(false);
       });
     
-    // Load low stock alerts independently
     apiService.inventory.getLowStockItems()
       .then(res => {
         setLowStockItems(res.data || []);
@@ -80,7 +68,11 @@ const DashboardPage = () => {
         console.error('Failed to fetch low stock items:', err);
         setLoadingAlerts(false);
       });
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleReorder = (itemId) => {
     const item = lowStockItems.find(i => i.id === itemId);

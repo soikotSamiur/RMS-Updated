@@ -175,7 +175,7 @@ const InventoryPage = () => {
             <h1 className="text-2xl font-bold text-gray-800">Inventory Management</h1>
             <p className="text-gray-600">Manage your restaurant inventory and track stock levels</p>
           </div>
-          <div className="grid grid-cols-1 mt-2 md:mt-0 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 mt-2 md:mt-0 md:grid-cols- gap-2">
             {user && user.role === 'Admin' ? (
               <>
                 <button 
@@ -183,18 +183,6 @@ const InventoryPage = () => {
                   className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                   <i className="fas fa-plus"></i> Add New Item
-                </button>
-                <button 
-                  onClick={exportInventory}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                >
-                  <i className="fas fa-download"></i> Export Inventory
-                </button>
-                <button 
-                  onClick={refreshInventory}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                >
-                  <i className="fas fa-sync"></i> Refresh
                 </button>
               </>
             ) : (
