@@ -13,13 +13,19 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const getMonthStartDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}-01`;
+};
+
 const ReportsPage = () => {
   const [activeReport, setActiveReport] = useState('sales');
   const [filters, setFilters] = useState({
-    startDate: getLocalDateString(),
+    startDate: getMonthStartDate(),
     endDate: getLocalDateString(),
-    category: 'all',
-    reportType: 'daily'
+    reportType: 'monthly'
   });
   const [reportData, setReportData] = useState({
     sales: [],
@@ -29,12 +35,48 @@ const ReportsPage = () => {
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const calculateDateRange = (reportType) => {
+    const today = new Date();
+    let startDate, endDate;
+    
+    switch(reportType) {
+      case 'daily':
+        startDate = new Date(today);
+        endDate = new Date(today);
+        break;
+      case 'weekly':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 6);
+        endDate = new Date(today);
+        break;
+      case 'monthly':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today);
+        break;
+      default:
+        startDate = new Date(today);
+        endDate = new Date(today);
+    }
+    
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    return {
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate)
+    };
+  };
+
   const fetchReports = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch real data from backend API
+      // Fetch real data from backend API using the dates from filters
       if (activeReport === 'sales') {
         const response = await apiService.reports.getSalesReport(filters.startDate, filters.endDate);
         setReportData(prev => ({ ...prev, sales: response.data }));
@@ -57,7 +99,18 @@ const ReportsPage = () => {
  
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+    // If reportType changed, calculate new date range
+    if (newFilters.reportType !== filters.reportType) {
+      const dateRange = calculateDateRange(newFilters.reportType);
+      setFilters({
+        ...newFilters,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+    } else {
+      // Otherwise just update the filters (manual date changes)
+      setFilters(newFilters);
+    }
   };
 
   const handleRefresh = () => {
