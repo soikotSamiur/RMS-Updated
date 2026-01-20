@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import apiService from '../../../services/apiService';
 import DashboardHeader from './DashboardHeader';
 import StatsCards from './StatsCards';
@@ -23,56 +23,48 @@ const DashboardPage = () => {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   
-  const fetchDashboardData = useCallback(async () => {
-        
-    apiService.dashboard.getDashboardStats()
-      .then(res => {
-        setStats(res.data);
-        setLoadingStats(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch stats:', err);
-        setLoadingStats(false);
-      });
-    
-    Promise.all([
-      apiService.dashboard.getDailyTrends(),
-      apiService.dashboard.getCategoryDistribution()
-    ])
-      .then(([trendsRes, categoryRes]) => {
-        setDailyTrends(trendsRes.data);
-        setCategoryDistribution(categoryRes.data);
-        setLoadingCharts(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch charts:', err);
-        setLoadingCharts(false);
-      });
-    
-    apiService.dashboard.getTopSellingProducts()
-      .then(res => {
-        setTopSellingProducts(res.data || []);
-        setLoadingProducts(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch top products:', err);
-        setLoadingProducts(false);
-      });
-    
-    apiService.inventory.getLowStockItems()
-      .then(res => {
-        setLowStockItems(res.data || []);
-        setLoadingAlerts(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch low stock items:', err);
-        setLoadingAlerts(false);
-      });
-  }, []);
+  const hasFetched = useRef(false);
+  
+  const fetchDashboardData = async () => {
+    try {
+      const statsRes = await apiService.dashboard.getDashboardStats();
+      setStats(statsRes.data);
+      setLoadingStats(false);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const trendsRes = await apiService.dashboard.getDailyTrends();
+      setDailyTrends(trendsRes.data);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const categoryRes = await apiService.dashboard.getCategoryDistribution();
+      setCategoryDistribution(categoryRes.data);
+      setLoadingCharts(false);
+      
+   
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const productsRes = await apiService.dashboard.getTopSellingProducts();
+      setTopSellingProducts(productsRes.data || []);
+      setLoadingProducts(false);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const lowStockRes = await apiService.inventory.getLowStockItems();
+      setLowStockItems(lowStockRes.data || []);
+      setLoadingAlerts(false);
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setLoadingStats(false);
+      setLoadingCharts(false);
+      setLoadingProducts(false);
+      setLoadingAlerts(false);
+    }
+  };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchDashboardData();
+    }
+  }, []);
 
   const handleReorder = (itemId) => {
     const item = lowStockItems.find(i => i.id === itemId);

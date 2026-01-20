@@ -9,22 +9,20 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
 {
-    /**
-     * Get all inventory items with optional filters
-     */
+ // Get all inventory items with pagination and filters-1
     public function index(Request $request)
     {
-        // Get pagination parameters
+       
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 15);
         $category = $request->input('category', 'all');
         $status = $request->input('status', 'all');
         $search = $request->input('search', '');
 
-        // Build query
+       
         $query = InventoryItem::query();
 
-        // Apply filters
+       
         if ($category !== 'all') {
             $query->where('category', $category);
         }
@@ -37,16 +35,33 @@ class InventoryController extends Controller
             $query->where('name', 'like', '%' . $search . '%');
         }
 
-        // Get total count before pagination
         $total = $query->count();
-
-        // Apply pagination and ordering
+  
         $items = $query
             ->orderBy('name')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
 
+        $statsQuery = InventoryItem::query();
+        if ($category !== 'all') {
+            $statsQuery->where('category', $category);
+        }
+        if (!empty($search)) {
+            $statsQuery->where('name', 'like', '%' . $search . '%');
+        }
+        
+        $allItems = $statsQuery->get();
+        $outOfStockCount = $allItems->where('current_stock', '<=', 0)->count();
+        $lowStockCount = $allItems->filter(function($item) {
+            return $item->current_stock > 0 && $item->current_stock <= $item->reorder_level;
+        })->count();
+        
+        $inStockCount = $allItems->filter(function($item) {
+            return $item->current_stock > $item->reorder_level;
+        })->count();
+
+        
         return response()->json([
             'success' => true,
             'data' => $items->map(function($item) {
@@ -70,13 +85,16 @@ class InventoryController extends Controller
                 'per_page' => (int) $perPage,
                 'total' => $total,
                 'total_pages' => ceil($total / $perPage)
+            ],
+            'stats' => [
+                'in_stock' => $inStockCount,
+                'low_stock' => $lowStockCount,
+                'out_of_stock' => $outOfStockCount
             ]
         ]);
     }
-
-    /**
-     * Get a single inventory item
-     */
+    
+// Get single inventory item-2
     public function show($id)
     {
         $item = InventoryItem::with('menuItems')->findOrFail($id);
@@ -104,10 +122,8 @@ class InventoryController extends Controller
             ]
         ]);
     }
-
-    /**
-     * Create a new inventory item
-     */
+    
+ // Create new inventory item-3
     public function store(Request $request)
     {
         $request->validate([
@@ -150,10 +166,8 @@ class InventoryController extends Controller
             'message' => 'Inventory item created successfully'
         ], 201);
     }
-
-    /**
-     * Update an existing inventory item
-     */
+    
+ // Update inventory item-4
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -196,10 +210,8 @@ class InventoryController extends Controller
             'message' => 'Inventory item updated successfully'
         ]);
     }
-
-    /**
-     * Delete an inventory item
-     */
+    
+ // Delete inventory item-5
     public function destroy($id)
     {
         $item = InventoryItem::findOrFail($id);
@@ -210,17 +222,24 @@ class InventoryController extends Controller
             'message' => 'Inventory item deleted successfully'
         ]);
     }
-
-    /**
-     * Get inventory statistics
-     */
+    
+ // Get inventory statistics-6
     public function getStats()
     {
-        $totalItems = InventoryItem::count();
-        $lowStockCount = InventoryItem::where('status', 'low_stock')->count();
-        $outOfStockCount = InventoryItem::where('status', 'out_of_stock')->count();
-        $totalValue = InventoryItem::selectRaw('SUM(current_stock * cost_per_unit) as total')
-                                   ->value('total') ?? 0;
+        $allItems = InventoryItem::all();
+        $totalItems = $allItems->count();
+        
+        $outOfStockCount = $allItems->where('current_stock', '<=', 0)->count();
+        $lowStockCount = $allItems->filter(function($item) {
+            return $item->current_stock > 0 && $item->current_stock <= $item->reorder_level;
+        })->count();
+        $inStockCount = $allItems->filter(function($item) {
+            return $item->current_stock > $item->reorder_level;
+        })->count();
+        
+        $totalValue = $allItems->sum(function($item) {
+            return $item->current_stock * ($item->cost_per_unit ?? 0);
+        });
 
         return response()->json([
             'success' => true,
@@ -229,14 +248,12 @@ class InventoryController extends Controller
                 'lowStockCount' => $lowStockCount,
                 'outOfStockCount' => $outOfStockCount,
                 'totalValue' => (float) $totalValue,
-                'inStockCount' => $totalItems - $lowStockCount - $outOfStockCount
+                'inStockCount' => $inStockCount
             ]
         ]);
     }
-
-    /**
-     * Get low stock items
-     */
+    
+ // Get low stock items-7
     public function getLowStock()
     {
         $items = InventoryItem::whereIn('status', ['low_stock', 'out_of_stock'])
@@ -259,10 +276,8 @@ class InventoryController extends Controller
             })
         ]);
     }
-
-    /**
-     * Update stock manually (add or remove)
-     */
+    
+ // Update stock manually-8
     public function updateStock(Request $request, $id)
     {
         $request->validate([
@@ -288,10 +303,8 @@ class InventoryController extends Controller
             'message' => 'Stock updated successfully'
         ]);
     }
-
-    /**
-     * Link inventory item to menu item
-     */
+    
+ // Link inventory item to menu item-9
     public function linkToMenuItem(Request $request, $id)
     {
         $request->validate([
@@ -302,7 +315,6 @@ class InventoryController extends Controller
         $inventoryItem = InventoryItem::findOrFail($id);
         $menuItem = MenuItem::findOrFail($request->menuItemId);
 
-        // Attach or update the relationship
         $inventoryItem->menuItems()->syncWithoutDetaching([
             $menuItem->id => ['quantity_required' => $request->quantityRequired]
         ]);
@@ -312,10 +324,8 @@ class InventoryController extends Controller
             'message' => 'Inventory item linked to menu item successfully'
         ]);
     }
-
-    /**
-     * Unlink inventory item from menu item
-     */
+    
+ // Unlink inventory item from menu item-10
     public function unlinkFromMenuItem($id, $menuItemId)
     {
         $inventoryItem = InventoryItem::findOrFail($id);

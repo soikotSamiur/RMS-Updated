@@ -3,8 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 const MenuHeader = ({ stats, onAddNewItem }) => {
   const { user } = useAuth();
   const canManageMenu = user && (user.role === 'Admin' || user.role === 'Cashier' || user.role === 'Employee');
-  const canExport = user && user.role === 'Admin';
-
+  
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">

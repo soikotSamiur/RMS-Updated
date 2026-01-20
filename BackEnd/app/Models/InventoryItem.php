@@ -28,9 +28,7 @@ class InventoryItem extends Model
         'last_restock_date' => 'datetime'
     ];
 
-    /**
-     * Relationship: An inventory item can be used in many menu items
-     */
+    
     public function menuItems()
     {
         return $this->belongsToMany(MenuItem::class, 'inventory_menu_item')
@@ -38,9 +36,6 @@ class InventoryItem extends Model
                     ->withTimestamps();
     }
 
-    /**
-     * Update the status based on current stock vs reorder level
-     */
     public function updateStatus()
     {
         if ($this->current_stock <= 0) {
@@ -53,18 +48,13 @@ class InventoryItem extends Model
         $this->save();
     }
 
-    /**
-     * Deduct stock for a given quantity
-     */
+  
     public function deductStock($quantity)
     {
         $this->current_stock = max(0, $this->current_stock - $quantity);
         $this->updateStatus();
     }
 
-    /**
-     * Add stock for a given quantity
-     */
     public function addStock($quantity)
     {
         $this->current_stock += $quantity;

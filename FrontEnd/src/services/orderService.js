@@ -24,12 +24,6 @@ const orderService = {
     return res.data;
   },
 
-  // Update existing order
-  updateOrder: async (id, orderData) => {
-    const res = await API.put(`/orders/${id}`, orderData);
-    return res.data;
-  },
-
   // Update order status
   updateOrderStatus: async (id, status) => {
     const res = await API.patch(`/orders/${id}/status`, { status });

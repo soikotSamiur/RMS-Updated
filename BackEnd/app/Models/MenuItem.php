@@ -32,9 +32,6 @@ class MenuItem extends Model
         'preparation_time' => 'integer'
     ];
 
-    /**
-     * Relationship: A menu item can use many inventory items
-     */
     public function inventoryItems()
     {
         return $this->belongsToMany(InventoryItem::class, 'inventory_menu_item')

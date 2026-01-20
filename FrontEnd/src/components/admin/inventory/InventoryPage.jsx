@@ -22,6 +22,9 @@ const InventoryPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalInStock, setTotalInStock] = useState(0);
+  const [totalLowStock, setTotalLowStock] = useState(0);
+  const [totalOutOfStock, setTotalOutOfStock] = useState(0);
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
@@ -41,6 +44,19 @@ const InventoryPage = () => {
         setInventoryItems(response.data);
         setTotalItems(response.pagination?.total || 0);
         setTotalPages(response.pagination?.total_pages || 0);
+        
+        // Use stats from backend if available, otherwise calculate from current page
+        if (response.stats) {
+          setTotalInStock(response.stats.in_stock || 0);
+          setTotalLowStock(response.stats.low_stock || 0);
+          setTotalOutOfStock(response.stats.out_of_stock || 0);
+        } else {
+          // Fallback: calculate from current page data
+          const items = response.data || [];
+          setTotalInStock(items.filter(item => item.status === 'in_stock').length);
+          setTotalLowStock(items.filter(item => item.status === 'low_stock').length);
+          setTotalOutOfStock(items.filter(item => item.status === 'out_of_stock').length);
+        }
       }
       setIsLoading(false);
     } catch (err) {
@@ -57,7 +73,9 @@ const InventoryPage = () => {
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   }, [filters, itemsPerPage]);
 
   const showNotification = (message, type = 'info') => {
@@ -198,7 +216,14 @@ const InventoryPage = () => {
           </div>
         </div>
 
-        <InventoryStats inventoryItems={inventoryItems} />
+        <InventoryStats 
+          stats={{
+            totalItems: totalItems,
+            inStock: totalInStock,
+            lowStock: totalLowStock,
+            outOfStock: totalOutOfStock
+          }}
+        />
       </div>
 
       <SearchFilterBar onFilter={filterInventory} />

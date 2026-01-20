@@ -30,6 +30,8 @@ const MenuPage = () => {
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalAvailable, setTotalAvailable] = useState(0);
+    const [totalOutOfStock, setTotalOutOfStock] = useState(0);
 
     useEffect(() => {
         fetchCategories();
@@ -47,7 +49,7 @@ const MenuPage = () => {
             console.error('Failed to fetch categories:', err);
         }
     };
-
+// Fetch menu items-1
     const fetchMenuItems = async () => {
         try {
             setLoading(true);
@@ -63,6 +65,16 @@ const MenuPage = () => {
             setMenuItems(response.data || []);
             setTotalItems(response.pagination?.total || 0);
             setTotalPages(response.pagination?.total_pages || 0);
+            const allItems = response.data || [];
+            const availableCount = allItems.filter(item => item.available).length;
+            const outOfStockCount = allItems.filter(item => !item.available).length;
+            if (response.stats) {
+                setTotalAvailable(response.stats.available || availableCount);
+                setTotalOutOfStock(response.stats.out_of_stock || outOfStockCount);
+            } else {
+                setTotalAvailable(availableCount);
+                setTotalOutOfStock(outOfStockCount);
+            }
         } catch (err) {
             console.error('Failed to fetch menu items:', err);
             setError(err.message || 'Failed to fetch menu');
@@ -77,18 +89,20 @@ const MenuPage = () => {
         await fetchMenuItems();
     };
 
-    // Show notification
     const showNotification = (message, type = 'success') => {
         setNotification({ message, type });
         setTimeout(() => setNotification(null), 3000);
     };
-
-    // Reset to page 1 when filters change
+    
     useEffect(() => {
-        setCurrentPage(1);
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
     }, [selectedCategory, searchQuery, itemsPerPage]);
 
-    // Add item to cart
+
+
+// Add item to cart-2
     const addToCart = (item) => {
         setCart(prevCart => {
             const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
@@ -105,12 +119,10 @@ const MenuPage = () => {
         showNotification(`${item.name} added to cart`, 'success');
     };
 
-    // Remove item from cart
     const removeFromCart = (itemId) => {
         setCart(prevCart => prevCart.filter(item => item.id !== itemId));
     };
 
-    // Update item quantity in cart
     const updateQuantity = (itemId, newQuantity) => {
         if (newQuantity < 1) {
             removeFromCart(itemId);
@@ -123,33 +135,29 @@ const MenuPage = () => {
         );
     };
 
-    // Clear entire cart
     const clearCart = () => {
         setCart([]);
         showNotification('Cart cleared', 'info');
     };
 
-    // Calculate total amount
     const getTotalAmount = () => {
         return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
     };
 
-    // Calculate total items
     const getTotalItems = () => {
         return cart.reduce((total, item) => total + item.quantity, 0);
     };
 
-    // Calculate menu stats
     const getMenuStats = () => {
         return {
             totalItems: totalItems,
-            totalCategories: categories.length - 1, // Exclude 'all' category
-            availableItems: menuItems.filter(item => item.available).length,
-            outOfStock: menuItems.filter(item => !item.available).length
+            totalCategories: categories.length - 1, 
+            availableItems: totalAvailable,
+            outOfStock: totalOutOfStock
         };
     };
 
-    // Handle add new item
+// Handle add new item-3
     const handleAddNewItem = async (newItem) => {
         try {
             setLoading(true);
@@ -159,19 +167,19 @@ const MenuPage = () => {
                 showNotification('Menu item added successfully', 'success');
                 setShowAddModal(false);
                 
-                // Refresh menu items and categories
-                await fetchCategories();
                 await fetchMenuItems();
+                return response.data;
             }
         } catch (err) {
             console.error('Failed to add menu item:', err);
             showNotification('Failed to add menu item', 'error');
+            throw err;
         } finally {
             setLoading(false);
         }
     };
 
-    // Handle edit item
+// Handle edit item-4
     const handleEditItem = async (itemId, updatedItem) => {
         console.log('Editing item:', itemId, updatedItem);
         try {
@@ -182,22 +190,20 @@ const MenuPage = () => {
                 showNotification('Menu item updated successfully', 'success');
                 setEditingItem(null);
                 setShowAddModal(false);
-                
-                // Refresh menu items and categories
-                await fetchCategories();
                 await fetchMenuItems();
+                return response.data;
             }
         } catch (err) {
             console.error('Failed to update menu item:', err);
             showNotification('Failed to update menu item', 'error');
+            throw err;
         } finally {
             setLoading(false);
         }
     };
 
-    // Handle delete item
+    // Handle delete item-5
     const handleDeleteItem = async (itemId) => {
-        // Confirmation is now handled in MenuGrid
         console.log('Deleting item:', itemId);
         
         try {
@@ -205,13 +211,8 @@ const MenuPage = () => {
             const response = await apiService.menu.deleteMenuItem(itemId);
             
             if (response.success) {
-                // Remove from cart if exists
-                setCart(cart.filter(item => item.id !== itemId));
-                
+                setCart(cart.filter(item => item.id !== itemId)); 
                 showNotification('Menu item deleted successfully', 'success');
-                
-                // Refresh menu items and categories
-                await fetchCategories();
                 await fetchMenuItems();
             }
         } catch (err) {
@@ -222,7 +223,7 @@ const MenuPage = () => {
         }
     };
 
-    // Handle toggle availability
+    // Handle toggle availability-6
     const handleToggleAvailability = async (itemId) => {
         console.log('Toggling availability for item:', itemId);
         try {
@@ -230,8 +231,6 @@ const MenuPage = () => {
             
             if (response.success) {
                 showNotification(response.message, 'success');
-                
-                // Refresh menu items to get updated availability
                 await fetchMenuItems();
             }
         } catch (err) {
@@ -240,26 +239,22 @@ const MenuPage = () => {
         }
     };
 
-    // Open edit modal
     const openEditModal = (item) => {
         console.log('Opening edit modal for item:', item);
         setEditingItem(item);
         setShowAddModal(true);
     };
 
-    // Handle process payment
+    // Handle process payment-7
     const handleProcessPayment = async () => {
         if (cart.length === 0) return;
 
         try {
             setLoading(true);
-            
-            // Calculate order totals
             const subtotal = getTotalAmount();
             const tax = subtotal * 0.08;
             const total = subtotal + tax;
 
-            // Prepare order data matching backend requirements
             const orderData = {
                 customerName: 'Walk-in Customer',
                 phone: '',
@@ -280,12 +275,8 @@ const MenuPage = () => {
 
             // Create order
             const response = await apiService.orders.createOrder(orderData);
-            
             if (response.success) {
-                // Generate bill for the order
                 await generateBillForOrder(response.data.id, subtotal, tax, total);
-
-                // Set current order for receipt
                 setCurrentOrder({
                     id: response.data.id,
                     subtotal: subtotal,
@@ -295,21 +286,18 @@ const MenuPage = () => {
                     tableNumber: tableNumber
                 });
                 
-                // Show receipt
                 setShowReceipt(true);
-                
-                // Show success notification
                 showNotification('Order saved successfully!', 'success');
             }
         } catch (err) {
             console.error('Failed to create order:', err);
-            showNotification('Failed to process payment', 'error');
+            showNotification('Failed to process payment.There maybe insufficient ingredient stock in any item', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    // Generate bill for order
+    // Generate bill for order-8
     const generateBillForOrder = async (orderId, subtotal, tax, total) => {
         try {
             const billData = {
@@ -335,7 +323,6 @@ const MenuPage = () => {
             console.log('Bill generated successfully for order:', orderId);
         } catch (err) {
             console.error('Failed to generate bill:', err);
-            // Don't show error to user as this is a background operation
         }
     };
 

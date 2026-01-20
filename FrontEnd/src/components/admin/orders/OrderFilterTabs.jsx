@@ -15,18 +15,13 @@ const OrderFilterTabs = ({ selectedStatus, onStatusChange }) => {
             <button
               key={tab.id}
               onClick={() => onStatusChange(tab.id)}
-              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors ${
+              className={`py-4 px-6 text-center border-b-2 font-medium transition-colors ${
                 selectedStatus === tab.id
                   ? 'border-orange-500 text-orange-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {tab.label}
-              {tab.count !== null && (
-                <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
-                  {tab.count}
-                </span>
-              )}
             </button>
           ))}
         </nav>

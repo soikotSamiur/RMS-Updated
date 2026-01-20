@@ -1,6 +1,6 @@
 import OrderCard from './OrderCard';
 
-const OrderCardsGrid = ({ orders, onStatusUpdate, onEditOrder }) => {
+const OrderCardsGrid = ({ orders, onStatusUpdate }) => {
   if (orders.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-8 text-center">
@@ -18,7 +18,6 @@ const OrderCardsGrid = ({ orders, onStatusUpdate, onEditOrder }) => {
           key={order.id}
           order={order}
           onStatusUpdate={onStatusUpdate}
-          onEditOrder={onEditOrder}
         />
       ))}
     </div>

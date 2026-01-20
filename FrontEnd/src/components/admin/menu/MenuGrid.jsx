@@ -1,8 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
+import apiService from '../../../services/apiService';
 
 const MenuGrid = ({ items, onAddToCart, onEditItem, onDeleteItem, onToggleAvailability }) => {
   const [showActions, setShowActions] = useState({});
+  const [menuItemIngredients, setMenuItemIngredients] = useState({});
   const dropdownRefs = useRef({});
+
+  // Fetch ingredients for all menu items
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      const ingredientsData = {};
+      for (const item of items) {
+        try {
+          const response = await apiService.menu.getMenuItemIngredients(item.id);
+          if (response.success && response.data.ingredients) {
+            ingredientsData[item.id] = response.data.ingredients;
+          }
+        } catch (err) {
+          console.error(`Error fetching ingredients for item ${item.id}:`, err);
+        }
+      }
+      setMenuItemIngredients(ingredientsData);
+    };
+
+    if (items.length > 0) {
+      fetchIngredients();
+    }
+  }, [items]);
 
   const handleImageError = (e) => {
     e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
@@ -53,9 +77,10 @@ const MenuGrid = ({ items, onAddToCart, onEditItem, onDeleteItem, onToggleAvaila
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.map(item => (
+    
         <div 
           key={item.id}
-          className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group relative"
+          className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group relative "
         >
           {/* Actions Menu Button */}
           <div className="absolute top-2 left-2 z-30" ref={el => dropdownRefs.current[item.id] = el}>
@@ -158,43 +183,21 @@ const MenuGrid = ({ items, onAddToCart, onEditItem, onDeleteItem, onToggleAvaila
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
-                {/* Diet labels */}
-                <div className="flex gap-1 mt-1">
-                  {item.isVegan && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full" title="Vegan">
-                      <i className="fas fa-seedling"></i> Vegan
-                    </span>
-                  )}
-                  {item.isVegetarian && !item.isVegan && (
-                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full" title="Vegetarian">
-                      <i className="fas fa-leaf"></i> Veg
-                    </span>
-                  )}
-                  {item.spicyLevel && item.spicyLevel !== 'none' && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full" title={`Spicy: ${item.spicyLevel}`}>
-                      🌶️ {item.spicyLevel}
-                    </span>
-                  )}
               </div>
+              <span className="text-orange-500 font-bold text-lg">{item.price} <i className="fa-solid fa-bangladeshi-taka-sign"></i></span>
             </div>
-            <span className="text-orange-500 font-bold text-lg">{item.price} <i className="fa-solid fa-bangladeshi-taka-sign"></i></span>
-          </div>
           
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>            {/* Ingredients & Allergens */}
-            {(item.ingredients?.length > 0 || item.allergens?.length > 0) && (
-              <div className="text-xs text-gray-500 mb-3 space-y-1">
-                {item.ingredients?.length > 0 && (
-                  <div className="flex gap-1 items-start">
-                    <i className="fas fa-mortar-pestle mt-0.5"></i>
-                    <span className="line-clamp-1">{item.ingredients.slice(0, 3).join(', ')}</span>
-                  </div>
-                )}
-                {item.allergens?.length > 0 && (
-                  <div className="flex gap-1 items-start text-red-600">
-                    <i className="fas fa-exclamation-triangle mt-0.5"></i>
-                    <span className="line-clamp-1">Allergens: {item.allergens.join(', ')}</span>
-                  </div>
-                )}
+            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+            
+            {/* Inventory Ingredients */}
+            {menuItemIngredients[item.id]?.length > 0 && (
+              <div className="text-xs text-gray-500 mb-3">
+                <div className="flex gap-1 items-start">
+                  <i className="fas fa-mortar-pestle mt-0.5"></i>
+                  <span className="line-clamp-1">
+                    {menuItemIngredients[item.id].map(ing => ing.name).slice(0, 3).join(', ')}
+                  </span>
+                </div>
               </div>
             )}
             

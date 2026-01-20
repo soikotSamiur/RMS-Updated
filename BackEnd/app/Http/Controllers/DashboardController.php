@@ -16,7 +16,7 @@ class DashboardController extends Controller
     public function getDashboardStats()
     {
         $data = Cache::remember('dashboard_stats', 300, function () {
-            // Get current month data
+            
             $currentMonthStart = Carbon::now()->startOfMonth();
             $currentMonthEnd = Carbon::now()->endOfMonth();
             $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
@@ -141,8 +141,7 @@ class DashboardController extends Controller
         ]);
     }
     
-    // Get Sales Distribution by Category
-     
+    // Get Sales Distribution by Category  
     public function getCategoryDistribution()
     {
         $data = Cache::remember('dashboard_category_distribution', 300, function () {
@@ -199,7 +198,6 @@ class DashboardController extends Controller
             'salads' => 'Salads'
         ];
         
-        // Optimize: Calculate revenue directly in SQL and limit results
         $topProducts = OrderItem::join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', '!=', 'cancelled')

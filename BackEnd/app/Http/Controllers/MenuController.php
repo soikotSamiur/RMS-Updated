@@ -14,7 +14,6 @@ class MenuController extends Controller
     {
         $categories = Category::all();
         
-        // Add 'all' category at the beginning
         $allCategory = [
             'id' => 'all',
             'name' => 'All Items',
@@ -22,10 +21,9 @@ class MenuController extends Controller
             'count' => MenuItem::count()
         ];
         
-        // Transform categories to use slug as id for frontend filtering
         $categoriesArray = $categories->map(function($cat) {
             return [
-                'id' => $cat->slug,  // Use slug as id for filtering
+                'id' => $cat->slug,  
                 'name' => $cat->name,
                 'slug' => $cat->slug,
                 'count' => $cat->count
@@ -43,21 +41,18 @@ class MenuController extends Controller
     // Get all menu items
     public function getMenuItems(Request $request)
     {
-        // Get pagination parameters
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 15);
         $category = $request->input('category', 'all');
         $search = $request->input('search', '');
 
-        // Build query
+        
         $query = MenuItem::query();
 
-        // Filter by category
         if ($category !== 'all') {
             $query->where('category', $category);
         }
-
-        // Filter by search
+      
         if (!empty($search)) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
@@ -65,10 +60,7 @@ class MenuController extends Controller
             });
         }
 
-        // Get total count before pagination
         $total = $query->count();
-
-        // Apply pagination
         $menuItems = $query
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
@@ -91,6 +83,21 @@ class MenuController extends Controller
                 ];
             });
 
+        // Search stats
+        $statsQuery = MenuItem::query();
+        if ($category !== 'all') {
+            $statsQuery->where('category', $category);
+        }
+        if (!empty($search)) {
+            $statsQuery->where(function($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%');
+            });
+        }
+        
+        $availableCount = $statsQuery->where('available', true)->count();
+        $outOfStockCount = $statsQuery->where('available', false)->count();
+
         return response()->json([
             'success' => true,
             'data' => $menuItems,
@@ -99,6 +106,10 @@ class MenuController extends Controller
                 'per_page' => (int) $perPage,
                 'total' => $total,
                 'total_pages' => ceil($total / $perPage)
+            ],
+            'stats' => [
+                'available' => $availableCount,
+                'out_of_stock' => $outOfStockCount
             ]
         ]);
     }
@@ -136,7 +147,7 @@ class MenuController extends Controller
             'spicy_level' => $request->spicyLevel ?? 'none'
         ]);
         
-        // Update category count
+        
         $this->updateCategoryCount($request->category);
         
         return response()->json([
@@ -197,7 +208,6 @@ class MenuController extends Controller
             'spicy_level' => $request->spicyLevel ?? $menuItem->spicy_level
         ]);
         
-        // Update category counts if category changed
         if ($oldCategory !== $menuItem->category) {
             $this->updateCategoryCount($oldCategory);
             $this->updateCategoryCount($menuItem->category);
@@ -232,7 +242,6 @@ class MenuController extends Controller
         
         $menuItem->delete();
         
-        // Update category count
         $this->updateCategoryCount($category);
         
         return response()->json([
@@ -269,7 +278,7 @@ class MenuController extends Controller
         ]);
     }
     
-    // Helper function to update category count
+    
     private function updateCategoryCount($categorySlug)
     {
         $count = MenuItem::where('category', $categorySlug)->count();

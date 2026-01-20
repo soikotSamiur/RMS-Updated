@@ -9,8 +9,6 @@ const CartSection = ({ cart, onRemoveFromCart, onUpdateQuantity, onClearCart, to
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-    
-    // Call the parent's payment handler
     onProcessPayment();
   };
 

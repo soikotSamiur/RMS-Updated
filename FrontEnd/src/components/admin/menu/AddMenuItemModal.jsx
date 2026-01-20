@@ -20,6 +20,28 @@ const AddMenuItemModal = ({ isOpen, onClose, onItemAdded, onItemUpdated, editing
   const [error, setError] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [ingredientSearchTerms, setIngredientSearchTerms] = useState({});
+
+  // Fetch inventory items on mount
+  useEffect(() => {
+    const fetchInventoryItems = async () => {
+      try {
+        const response = await apiService.inventory.getInventory({ per_page: 1000 });
+        if (response.success) {
+          console.log('Fetched inventory items:', response.data);
+          setInventoryItems(response.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching inventory items:', err);
+      }
+    };
+    
+    if (isOpen) {
+      fetchInventoryItems();
+    }
+  }, [isOpen]);
 
   // Populate form when editing
   useEffect(() => {
@@ -40,10 +62,31 @@ const AddMenuItemModal = ({ isOpen, onClose, onItemAdded, onItemUpdated, editing
         spicyLevel: editingItem.spicyLevel || 'none'
       });
       setImagePreview(editingItem.image || '');
+      
+      // Fetch ingredients for editing item
+      if (editingItem.id) {
+        fetchMenuItemIngredients(editingItem.id);
+      }
     } else {
       resetForm();
     }
   }, [editingItem, isOpen]);
+
+  const fetchMenuItemIngredients = async (menuItemId) => {
+    try {
+      const response = await apiService.menu.getMenuItemIngredients(menuItemId);
+      if (response.success && response.data.ingredients) {
+        setSelectedIngredients(response.data.ingredients.map(ing => ({
+          inventoryItemId: ing.id,
+          name: ing.name,
+          quantityRequired: ing.quantityRequired,
+          unit: ing.unit
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching menu item ingredients:', err);
+    }
+  };
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({
@@ -131,12 +174,27 @@ const AddMenuItemModal = ({ isOpen, onClose, onItemAdded, onItemUpdated, editing
 
       console.log('Submitting item data:', itemData);
 
+      let savedMenuItem;
       if (editingItem) {
         console.log('Calling onItemUpdated with id:', editingItem.id);
-        await onItemUpdated(editingItem.id, itemData);
+        savedMenuItem = await onItemUpdated(editingItem.id, itemData);
       } else {
         console.log('Calling onItemAdded');
-        await onItemAdded(itemData);
+        savedMenuItem = await onItemAdded(itemData);
+      }
+
+      // Save ingredients if menu item was created/updated successfully
+      if (savedMenuItem && savedMenuItem.id && selectedIngredients.length > 0) {
+        for (const ingredient of selectedIngredients) {
+          try {
+            await apiService.menu.addIngredientToMenuItem(savedMenuItem.id, {
+              inventoryItemId: ingredient.inventoryItemId,
+              quantityRequired: ingredient.quantityRequired
+            });
+          } catch (err) {
+            console.error('Error adding ingredient:', err);
+          }
+        }
       }
       
       // Don't reset form here - let parent handle closing
@@ -165,6 +223,61 @@ const AddMenuItemModal = ({ isOpen, onClose, onItemAdded, onItemUpdated, editing
     });
     setImagePreview('');
     setError(null);
+    setSelectedIngredients([]);
+    setIngredientSearchTerms({});
+  };
+
+  const handleAddIngredient = () => {
+    const newIndex = selectedIngredients.length;
+    setSelectedIngredients([...selectedIngredients, { inventoryItemId: '', name: '', quantityRequired: '', unit: '' }]);
+    setIngredientSearchTerms(prev => ({ ...prev, [newIndex]: '' }));
+  };
+
+  const handleRemoveIngredient = (index) => {
+    const newIngredients = selectedIngredients.filter((_, i) => i !== index);
+    setSelectedIngredients(newIngredients);
+    
+    // Remove search term for this index
+    const newSearchTerms = { ...ingredientSearchTerms };
+    delete newSearchTerms[index];
+    setIngredientSearchTerms(newSearchTerms);
+  };
+
+  const handleIngredientChange = (index, field, value) => {
+    const newIngredients = [...selectedIngredients];
+    
+    if (field === 'inventoryItemId') {
+      const selectedItem = inventoryItems.find(item => item.id === parseInt(value));
+      if (selectedItem) {
+        newIngredients[index] = {
+          ...newIngredients[index],
+          inventoryItemId: selectedItem.id,
+          name: selectedItem.name,
+          unit: selectedItem.unit
+        };
+      }
+    } else {
+      newIngredients[index][field] = value;
+    }
+    
+    setSelectedIngredients(newIngredients);
+  };
+
+  const handleIngredientSearchChange = (index, value) => {
+    setIngredientSearchTerms(prev => ({ ...prev, [index]: value }));
+  };
+
+  const getFilteredInventoryItems = (index) => {
+    const searchTerm = ingredientSearchTerms[index] || '';
+    const availableItems = inventoryItems.filter(item => item.status !== 'out_of_stock');
+    
+    if (!searchTerm.trim()) {
+      return availableItems;
+    }
+    
+    return availableItems.filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   const handleClose = () => {
@@ -363,96 +476,106 @@ const AddMenuItemModal = ({ isOpen, onClose, onItemAdded, onItemUpdated, editing
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <i className="fas fa-clipboard-list text-orange-500"></i>
-                Additional Details
+                Inventory Ingredients (For Automatic Stock Deduction)
               </h3>
               
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ingredients
-                    <span className="text-gray-500 text-xs ml-1">(comma separated)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.ingredients}
-                    onChange={(e) => handleFormChange('ingredients', e.target.value)}
-                    placeholder="e.g., Salmon, Herbs, Lemon, Butter"
-                    className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Allergens
-                    <span className="text-gray-500 text-xs ml-1">(comma separated)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.allergens}
-                    onChange={(e) => handleFormChange('allergens', e.target.value)}
-                    placeholder="e.g., Fish, Dairy, Nuts"
-                    className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Spicy Level</label>
-                  <select
-                    value={formData.spicyLevel}
-                    onChange={(e) => handleFormChange('spicyLevel', e.target.value)}
-                    className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    <option value="none">🟢 None</option>
-                    <option value="mild">🟡 Mild</option>
-                    <option value="medium">🟠 Medium</option>
-                    <option value="hot">🔴 Hot</option>
-                    <option value="extra-hot">🌶️ Extra Hot</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-300">
-                    <input
-                      type="checkbox"
-                      id="available"
-                      checked={formData.available}
-                      onChange={(e) => handleFormChange('available', e.target.checked)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <label htmlFor="available" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-1">
-                      <i className="fas fa-check-circle text-green-500"></i>
-                      Available
-                    </label>
+                {selectedIngredients.map((ingredient, index) => (
+                  <div key={index} className="flex gap-2 items-start p-3 bg-white rounded-lg border border-gray-300">
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Select Inventory Item</label>
+                      
+                      {/* Search Input */}
+                      <input
+                        type="text"
+                        value={ingredientSearchTerms[index] || ''}
+                        onChange={(e) => handleIngredientSearchChange(index, e.target.value)}
+                        placeholder="🔍 Search ingredients..."
+                        className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      
+                      {/* Dropdown with filtered results */}
+                      <select
+                        value={ingredient.inventoryItemId}
+                        onChange={(e) => handleIngredientChange(index, 'inventoryItemId', e.target.value)}
+                        className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">-- Select Ingredient --</option>
+                        {getFilteredInventoryItems(index).map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} (Stock: {item.currentStock} {item.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="w-40">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Qty Needed {ingredient.unit && <span className="text-orange-600">({ingredient.unit})</span>}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={ingredient.quantityRequired}
+                          onChange={(e) => handleIngredientChange(index, 'quantityRequired', e.target.value)}
+                          placeholder="e.g., 0.5"
+                          className="w-full px-3 py-2 border bg-white text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                        {ingredient.unit && (
+                          <span className="absolute right-3 top-2 text-sm text-gray-500 font-medium">
+                            {ingredient.unit}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIngredient(index)}
+                      className="mt-6 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
                   </div>
-
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-300">
-                    <input
-                      type="checkbox"
-                      id="vegetarian"
-                      checked={formData.isVegetarian}
-                      onChange={(e) => handleFormChange('isVegetarian', e.target.checked)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <label htmlFor="vegetarian" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-1">
-                      <i className="fas fa-leaf text-green-600"></i>
-                      Vegetarian
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-300">
-                    <input
-                      type="checkbox"
-                      id="vegan"
-                      checked={formData.isVegan}
-                      onChange={(e) => handleFormChange('isVegan', e.target.checked)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <label htmlFor="vegan" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-1">
-                      <i className="fas fa-seedling text-green-700"></i>
-                      Vegan
-                    </label>
-                  </div>
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={handleAddIngredient}
+                  className="w-full px-4 py-2 border-2 border-dashed border-orange-300 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-plus"></i>
+                  Add Ingredient from Inventory
+                </button>
+                
+                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <i className="fas fa-info-circle text-blue-500 mr-2"></i>
+                  <strong>Note:</strong> When this menu item is ordered, the specified quantities will be automatically deducted from inventory stock.
                 </div>
+              </div>
+            </div>
+
+            {/* Availability Status */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <i className="fas fa-toggle-on text-orange-500"></i>
+                Availability Status
+              </h3>
+              
+              <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-300 w-fit">
+                <input
+                  type="checkbox"
+                  id="available"
+                  checked={formData.available}
+                  onChange={(e) => handleFormChange('available', e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="available" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-1">
+                  <i className="fas fa-check-circle text-green-500"></i>
+                  Available
+                </label>
               </div>
             </div>
 

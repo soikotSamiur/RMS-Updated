@@ -1,6 +1,4 @@
-import { useAuth } from '../../../context/AuthContext';
-
-const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
+const OrderCard = ({ order, onStatusUpdate }) => {
   const getStatusColor = (status) => {
     const colors = {
       pending: { border: 'border-yellow-500', bg: 'bg-yellow-100', text: 'text-yellow-800' },
@@ -32,15 +30,10 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
 
   const statusColor = getStatusColor(order.status);
   const statusActions = getStatusActions(order.status);
-  const { user } = useAuth();
-  const currentRole = user?.role;
-
   const handleAction = (action) => {
     if (action.status) {
       onStatusUpdate(order.id, action.status);
-    } else if (action.action === 'call') {
-      alert(`Calling customer: ${order.phone}`);
-    }
+    } 
   };
 
   return (
@@ -50,21 +43,11 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h3 className="font-bold text-lg text-black">Order #{order.id}</h3>
-            <p className="text-gray-600 text-sm">
-              {order.type === 'dine-in' ? `Table #${order.table_number || order.tableNumber} • ${order.guests || 0} guests` : 
-               `Takeaway • ${order.customer_name || order.customerName}`}
+            <p className="text-gray-600 text-sm font-bold">
+              Table # {order.table_number || order.tableNumber}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {(currentRole === 'Admin' || currentRole === 'Cashier' || currentRole === 'Waiter' || currentRole === 'Employee') && order.status === 'pending' && (
-              <button
-                onClick={() => onEditOrder(order)}
-                className="text-blue-600 hover:text-blue-800 transition-colors"
-                title="Edit Order"
-              >
-                <i className="fas fa-edit"></i>
-              </button>
-            )}
             <span className={`${statusColor.bg} ${statusColor.text} px-2 py-1 rounded-full text-xs font-semibold`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
@@ -74,7 +57,7 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
         {/* Order Items */}
         <div className="space-y-2 mb-4">
           {(order.items || order.order_items || []).map((item, index) => (
-            <div key={index} className="flex justify-between text-sm">
+            <div key={index} className="flex justify-between text-sm font-normal">
               <span className=" text-black">{item.quantity}x {item.name || item.menu_item?.name || 'Item'}</span>
               <span className=" text-black">{(item.price * item.quantity).toFixed(2)} <i className="fa-solid fa-bangladeshi-taka-sign"></i></span>
             </div>
@@ -97,19 +80,7 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
           </div>
         )}
 
-        {/* Estimated Time (for preparing orders) */}
-        {order.status === 'preparing' && order.estimatedTime && (
-          <div className="text-xs text-gray-600 mb-3">
-            Estimated time: {order.estimatedTime} mins
-          </div>
-        )}
 
-        {/* Waiting Time (for ready orders) */}
-        {order.status === 'ready' && order.waitingTime && (
-          <div className="text-xs text-red-600 mb-3">
-            Waiting: {order.waitingTime} mins
-          </div>
-        )}
 
         {/* Order Footer */}
         <div className="border-t pt-3">
@@ -122,14 +93,6 @@ const OrderCard = ({ order, onStatusUpdate, onEditOrder }) => {
           {statusActions.length > 0 && (
             <div className="flex space-x-2">
               {statusActions
-                .filter(action => {
-                  // Filter actions by role: chefs only see preparing->ready/ delay actions
-                  if (currentRole === 'Chef') return ['preparing', 'ready', 'completed', 'pending'].includes(order.status);
-                  // Waiters can accept pending orders
-                  if (currentRole === 'Waiter') return order.status === 'pending' || order.status === 'ready';
-                  // Cashiers, Admins, and Employees see all actions
-                  return currentRole === 'Admin' || currentRole === 'Cashier' || currentRole === 'Employee' || !currentRole;
-                })
                 .map((action, index) => (
                   <button
                     key={index}

@@ -2,20 +2,14 @@ import { useState, useEffect } from 'react';
 import OrderStats from './OrderStats';
 import OrderFilterTabs from './OrderFilterTabs';
 import OrderCardsGrid from './OrderCardsGrid';
-import OrderTable from './OrderTable';
-import OrderActions from './OrderActions';
-import NewOrderModal from './NewOrderModal';
 import Pagination from '../../common/Pagination';
 import apiService from '../../../services/apiService';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
-  const [editingOrder, setEditingOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
@@ -45,10 +39,9 @@ const OrdersPage = () => {
       const total = response.pagination?.total || 0;
       setTotalItems(total);
       setTotalPages(response.pagination?.total_pages || 0);
-      
-      // Calculate stats with correct counts from backend
       calculateStats(total, response.status_counts || {});
       setError(null);
+
     } catch (err) {
       setError(err.message || 'Failed to fetch orders');
       console.error('Failed to fetch orders:', err);
@@ -71,9 +64,11 @@ const OrdersPage = () => {
     setOrderStats(stats);
   };
 
-  // Reset to page 1 when status filter changes
+  
   useEffect(() => {
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   }, [selectedStatus, itemsPerPage]);
 
   // Update order status
@@ -81,7 +76,6 @@ const OrdersPage = () => {
     try {
       const response = await apiService.orders.updateOrderStatus(orderId, newStatus);
       if (response.success) {
-        // Refresh orders after status update
         await fetchOrders();
       }
       setError(null);
@@ -91,37 +85,6 @@ const OrdersPage = () => {
     }
   };
 
-  // Add new order
-  const addNewOrder = () => {
-    setEditingOrder(null);
-    setIsNewOrderModalOpen(true);
-  };
-
-  // Handle new order creation
-  const handleOrderCreated = async (newOrder) => {
-    // Refresh orders after creation
-    await fetchOrders();
-    setError(null);
-  };
-
-  // Handle edit order
-  const handleEditOrder = (order) => {
-    setEditingOrder(order);
-    setIsNewOrderModalOpen(true);
-  };
-
-  // Handle order update
-  const handleOrderUpdated = async (updatedOrder) => {
-    // Refresh orders after update
-    await fetchOrders();
-    setEditingOrder(null);
-    setError(null);
-  };
-
-  // Print orders
-  const printOrders = () => {
-    window.print();
-  };
 
   return (
     <div className=" md:p-2">
@@ -132,12 +95,6 @@ const OrdersPage = () => {
             <h1 className="text-2xl font-bold text-gray-800">Order Management</h1>
             <p className="text-gray-600">Manage and track all restaurant orders</p>
           </div>
-          <OrderActions 
-            onAddNewOrder={addNewOrder}
-            onPrintOrders={printOrders}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
         </div>
 
         {/* Order Statistics */}
@@ -173,16 +130,10 @@ const OrdersPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Orders Yet</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600">
               Orders will appear here once customers place them through the menu page. 
               Start by going to the Menu page, adding items to cart, and processing a payment.
             </p>
-            <button
-              onClick={addNewOrder}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Create Manual Order
-            </button>
           </div>
         </div>
       )}
@@ -190,19 +141,10 @@ const OrdersPage = () => {
       {/* Orders Display */}
       {!loading && !error && orders.length > 0 && (
         <>
-          {viewMode === 'grid' ? (
-            <OrderCardsGrid 
-              orders={orders}
-              onStatusUpdate={updateOrderStatus}
-              onEditOrder={handleEditOrder}
-            />
-          ) : (
-            <OrderTable 
-              orders={orders}
-              onStatusUpdate={updateOrderStatus}
-              onEditOrder={handleEditOrder}
-            />
-          )}
+          <OrderCardsGrid 
+            orders={orders}
+            onStatusUpdate={updateOrderStatus}
+          />
 
           {/* Pagination */}
           {totalItems > 0 && (
@@ -217,18 +159,6 @@ const OrdersPage = () => {
           )}
         </>
       )}
-
-      {/* New Order Modal */}
-      <NewOrderModal 
-        isOpen={isNewOrderModalOpen}
-        onClose={() => {
-          setIsNewOrderModalOpen(false);
-          setEditingOrder(null);
-        }}
-        onOrderCreated={handleOrderCreated}
-        onOrderUpdated={handleOrderUpdated}
-        editingOrder={editingOrder}
-      />
     </div>
   );
 };
